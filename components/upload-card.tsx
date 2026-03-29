@@ -30,12 +30,65 @@ type PendingGenerateState = {
 
 const PENDING_GENERATE_KEY = "tryplushie_pending_generate";
 const PENDING_UPLOADS_BUCKET = "pending-uploads";
+const MAX_IMAGE_DIMENSION = 1280;
+const JPEG_QUALITY = 0.86;
 
 function makePendingUploadPath(file: File) {
-  const extension = file.name.includes(".") ? file.name.split(".").pop() : "png";
-  const safeExtension = (extension || "png").replace(/[^a-zA-Z0-9]/g, "").toLowerCase() || "png";
+  const extension = file.name.includes(".") ? file.name.split(".").pop() : "jpg";
+  const safeExtension = (extension || "jpg").replace(/[^a-zA-Z0-9]/g, "").toLowerCase() || "jpg";
   const randomId = crypto.randomUUID();
   return `pending/${randomId}.${safeExtension}`;
+}
+
+function loadImageFromUrl(url: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Could not read your image."));
+    image.src = url;
+  });
+}
+
+async function compressImage(file: File) {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Please upload a valid image.");
+  }
+
+  const objectUrl = URL.createObjectURL(file);
+
+  try {
+    const image = await loadImageFromUrl(objectUrl);
+    const maxSide = Math.max(image.width, image.height);
+    const scale = maxSide > MAX_IMAGE_DIMENSION ? MAX_IMAGE_DIMENSION / maxSide : 1;
+
+    const targetWidth = Math.max(1, Math.round(image.width * scale));
+    const targetHeight = Math.max(1, Math.round(image.height * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      throw new Error("Could not prepare your image.");
+    }
+
+    context.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, "image/jpeg", JPEG_QUALITY);
+    });
+
+    if (!blob) {
+      throw new Error("Could not compress your image.");
+    }
+
+    const fileBaseName = file.name.replace(/\.[^.]+$/, "") || "upload";
+    return new File([blob], `${fileBaseName}.jpg`, { type: "image/jpeg" });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
 }
 
 async function uploadPendingImage(file: File) {
@@ -44,7 +97,7 @@ async function uploadPendingImage(file: File) {
   const { error } = await supabase.storage.from(PENDING_UPLOADS_BUCKET).upload(path, file, {
     cacheControl: "3600",
     upsert: false,
-    contentType: file.type || "image/png"
+    contentType: file.type || "image/jpeg"
   });
 
   if (error) {
@@ -71,10 +124,32 @@ async function restoreFileFromPendingState(pendingState: PendingGenerateState) {
   }
 
   const blob = await response.blob();
-  const fileName = pendingState.fileName || "pending-upload.png";
-  const mimeType = pendingState.mimeType || blob.type || "image/png";
+  const fileName = pendingState.fileName || "pending-upload.jpg";
+  const mimeType = pendingState.mimeType || blob.type || "image/jpeg";
 
   return new File([blob], fileName, { type: mimeType });
+}
+
+async function parseGenerateResponse(response: Response) {
+  const contentType = response.headers.get("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    return (await response.json()) as GenerateResponse;
+  }
+
+  const rawText = await response.text();
+
+  if (/Request Entity Too Large/i.test(rawText)) {
+    return {
+      ok: false,
+      error: "That photo is too large right now. Please try another photo or a slightly smaller image."
+    } satisfies GenerateResponse;
+  }
+
+  return {
+    ok: false,
+    error: rawText || "Could not generate your plushie."
+  } satisfies GenerateResponse;
 }
 
 export function UploadCard() {
@@ -88,6 +163,7 @@ export function UploadCard() {
   const [resultUsedFreeGeneration, setResultUsedFreeGeneration] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRestoringPending, setIsRestoringPending] = useState(false);
+  const [isPreparingImage, setIsPreparingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -180,20 +256,37 @@ export function UploadCard() {
     setResultUsedFreeGeneration(false);
   }
 
-  function onFileChange(event: ChangeEvent<HTMLInputElement>) {
+  async function onFileChange(event: ChangeEvent<HTMLInputElement>) {
     const nextFile = event.target.files?.[0] ?? null;
-    setFile(nextFile);
+
     resetResultState();
     setError(null);
     setNotice(null);
 
     if (!nextFile) {
+      setFile(null);
       setPreviewUrl(null);
       return;
     }
 
-    const localUrl = URL.createObjectURL(nextFile);
-    setPreviewUrl(localUrl);
+    setIsPreparingImage(true);
+
+    try {
+      const compressedFile = await compressImage(nextFile);
+      const localUrl = URL.createObjectURL(compressedFile);
+
+      setFile(compressedFile);
+      setPreviewUrl(localUrl);
+      setNotice("Photo optimised and ready to generate.");
+    } catch (compressionError) {
+      setFile(null);
+      setPreviewUrl(null);
+      setError(
+        compressionError instanceof Error ? compressionError.message : "Could not prepare your uploaded image."
+      );
+    } finally {
+      setIsPreparingImage(false);
+    }
   }
 
   async function savePendingGenerateState() {
@@ -246,7 +339,7 @@ export function UploadCard() {
         body: formData
       });
 
-      const data = (await response.json()) as GenerateResponse;
+      const data = await parseGenerateResponse(response);
 
       if (!response.ok || !data.ok || !data.resultId || !data.previewDataUrl) {
         if (data.code === "AUTH_REQUIRED") {
@@ -333,11 +426,17 @@ export function UploadCard() {
         <button
           type="button"
           onClick={handleGenerate}
-          disabled={isGenerating || isRestoringPending}
+          disabled={isGenerating || isRestoringPending || isPreparingImage}
           className="mt-5 flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-[var(--text)] px-5 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(37,21,5,0.18)] transition hover:opacity-95 disabled:opacity-60"
         >
-          {isGenerating || isRestoringPending ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
-          {isRestoringPending ? "Restoring your photo…" : isGenerating ? "Generating plushie…" : "Create my plushie"}
+          {isGenerating || isRestoringPending || isPreparingImage ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
+          {isPreparingImage
+            ? "Preparing your photo…"
+            : isRestoringPending
+              ? "Restoring your photo…"
+              : isGenerating
+                ? "Generating plushie…"
+                : "Create my plushie"}
         </button>
 
         <p className="mt-3 text-center text-sm text-[var(--muted)]">
