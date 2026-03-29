@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Mail, Sparkles } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-export default function AuthPage() {
+function AuthPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -237,5 +237,28 @@ export default function AuthPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+function AuthPageFallback() {
+  return (
+    <main className="min-h-screen px-4 py-8 sm:px-6">
+      <div className="mx-auto max-w-xl">
+        <div className="glass-card flex min-h-[320px] items-center justify-center rounded-[34px] p-6">
+          <div className="flex items-center gap-3 text-[var(--text)]">
+            <Loader2 className="animate-spin" size={20} />
+            <span className="text-sm font-semibold">Loading sign-in…</span>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={<AuthPageFallback />}>
+      <AuthPageInner />
+    </Suspense>
   );
 }
