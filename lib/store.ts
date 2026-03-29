@@ -1,33 +1,42 @@
-import fs from "node:fs/promises";
-import path from "node:path";
 import crypto from "node:crypto";
-import type { PlushieResult } from "@/types";
+import { supabaseServer } from "@/lib/supabase-server";
+import type { PlushieResult, PlushieStyle } from "@/types";
 
-const dataDir = path.join(process.cwd(), ".data");
-const dataFile = path.join(dataDir, "results.json");
+type GenerationRow = {
+  id: string;
+  style: string | null;
+  prompt: string | null;
+  source_image_url: string | null;
+  preview_image_url: string | null;
+  hd_image_url: string | null;
+  is_unlocked: boolean | null;
+  created_at: string | null;
+  checkout_session_id?: string | null;
+};
 
-async function ensureStore() {
-  await fs.mkdir(dataDir, { recursive: true });
-  try {
-    await fs.access(dataFile);
-  } catch {
-    await fs.writeFile(dataFile, "[]", "utf8");
+function toPlushieStyle(value: string | null): PlushieStyle {
+  if (value === "classic" || value === "crochet" || value === "luxury") {
+    return value;
   }
+
+  return "classic";
 }
 
-async function readStore(): Promise<PlushieResult[]> {
-  await ensureStore();
-  const raw = await fs.readFile(dataFile, "utf8");
-  return JSON.parse(raw) as PlushieResult[];
-}
-
-async function writeStore(results: PlushieResult[]) {
-  await ensureStore();
-  await fs.writeFile(dataFile, JSON.stringify(results, null, 2), "utf8");
+function mapGenerationToResult(row: GenerationRow): PlushieResult {
+  return {
+    id: row.id,
+    style: toPlushieStyle(row.style),
+    prompt: row.prompt ?? "",
+    sourceDataUrl: row.source_image_url ?? "",
+    previewDataUrl: row.preview_image_url ?? "",
+    hdDataUrl: row.hd_image_url ?? "",
+    createdAt: row.created_at ?? new Date().toISOString(),
+    isPaid: Boolean(row.is_unlocked),
+    checkoutSessionId: row.checkout_session_id ?? undefined
+  };
 }
 
 export async function createResult(input: Omit<PlushieResult, "id" | "createdAt" | "isPaid">) {
-  const results = await readStore();
   const newResult: PlushieResult = {
     ...input,
     id: crypto.randomUUID(),
@@ -35,57 +44,72 @@ export async function createResult(input: Omit<PlushieResult, "id" | "createdAt"
     isPaid: false
   };
 
-  results.unshift(newResult);
-  await writeStore(results);
   return newResult;
 }
 
 export async function getResult(id: string) {
-  const results = await readStore();
-  return results.find((item) => item.id === id) ?? null;
+  const { data, error } = await supabaseServer
+    .from("generations")
+    .select(
+      "id, style, prompt, source_image_url, preview_image_url, hd_image_url, is_unlocked, created_at, checkout_session_id"
+    )
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapGenerationToResult(data as GenerationRow);
 }
 
 export async function markPaidByResultId(id: string) {
-  const results = await readStore();
-  const index = results.findIndex((item) => item.id === id);
+  const { data, error } = await supabaseServer
+    .from("generations")
+    .update({ is_unlocked: true })
+    .eq("id", id)
+    .select(
+      "id, style, prompt, source_image_url, preview_image_url, hd_image_url, is_unlocked, created_at, checkout_session_id"
+    )
+    .maybeSingle();
 
-  if (index === -1) return null;
+  if (error || !data) {
+    return null;
+  }
 
-  results[index] = {
-    ...results[index],
-    isPaid: true
-  };
-
-  await writeStore(results);
-  return results[index];
+  return mapGenerationToResult(data as GenerationRow);
 }
 
 export async function attachCheckoutSession(resultId: string, checkoutSessionId: string) {
-  const results = await readStore();
-  const index = results.findIndex((item) => item.id === resultId);
+  const { data, error } = await supabaseServer
+    .from("generations")
+    .update({ checkout_session_id: checkoutSessionId })
+    .eq("id", resultId)
+    .select(
+      "id, style, prompt, source_image_url, preview_image_url, hd_image_url, is_unlocked, created_at, checkout_session_id"
+    )
+    .maybeSingle();
 
-  if (index === -1) return null;
+  if (error || !data) {
+    return null;
+  }
 
-  results[index] = {
-    ...results[index],
-    checkoutSessionId
-  };
-
-  await writeStore(results);
-  return results[index];
+  return mapGenerationToResult(data as GenerationRow);
 }
 
 export async function markPaidByCheckoutSessionId(checkoutSessionId: string) {
-  const results = await readStore();
-  const index = results.findIndex((item) => item.checkoutSessionId === checkoutSessionId);
+  const { data, error } = await supabaseServer
+    .from("generations")
+    .update({ is_unlocked: true })
+    .eq("checkout_session_id", checkoutSessionId)
+    .select(
+      "id, style, prompt, source_image_url, preview_image_url, hd_image_url, is_unlocked, created_at, checkout_session_id"
+    )
+    .maybeSingle();
 
-  if (index === -1) return null;
+  if (error || !data) {
+    return null;
+  }
 
-  results[index] = {
-    ...results[index],
-    isPaid: true
-  };
-
-  await writeStore(results);
-  return results[index];
+  return mapGenerationToResult(data as GenerationRow);
 }
