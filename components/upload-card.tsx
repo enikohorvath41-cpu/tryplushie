@@ -23,9 +23,59 @@ type PendingGenerateState = {
   intent: "generate";
   style: PlushieStyle;
   fileName: string | null;
+  mimeType: string | null;
+  storagePath: string | null;
+  publicUrl: string | null;
 };
 
 const PENDING_GENERATE_KEY = "tryplushie_pending_generate";
+const PENDING_UPLOADS_BUCKET = "pending-uploads";
+
+function makePendingUploadPath(file: File) {
+  const extension = file.name.includes(".") ? file.name.split(".").pop() : "png";
+  const safeExtension = (extension || "png").replace(/[^a-zA-Z0-9]/g, "").toLowerCase() || "png";
+  const randomId = crypto.randomUUID();
+  return `pending/${randomId}.${safeExtension}`;
+}
+
+async function uploadPendingImage(file: File) {
+  const path = makePendingUploadPath(file);
+
+  const { error } = await supabase.storage.from(PENDING_UPLOADS_BUCKET).upload(path, file, {
+    cacheControl: "3600",
+    upsert: false,
+    contentType: file.type || "image/png"
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const { data } = supabase.storage.from(PENDING_UPLOADS_BUCKET).getPublicUrl(path);
+
+  return {
+    storagePath: path,
+    publicUrl: data.publicUrl
+  };
+}
+
+async function restoreFileFromPendingState(pendingState: PendingGenerateState) {
+  if (!pendingState.publicUrl) {
+    return null;
+  }
+
+  const response = await fetch(pendingState.publicUrl);
+
+  if (!response.ok) {
+    throw new Error("Could not restore your uploaded image.");
+  }
+
+  const blob = await response.blob();
+  const fileName = pendingState.fileName || "pending-upload.png";
+  const mimeType = pendingState.mimeType || blob.type || "image/png";
+
+  return new File([blob], fileName, { type: mimeType });
+}
 
 export function UploadCard() {
   const router = useRouter();
@@ -37,6 +87,7 @@ export function UploadCard() {
   const [resultRemainingCredits, setResultRemainingCredits] = useState<number | null>(null);
   const [resultUsedFreeGeneration, setResultUsedFreeGeneration] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isRestoringPending, setIsRestoringPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -74,18 +125,44 @@ export function UploadCard() {
 
       if (!isMounted || !session) return;
 
-      setStyle(pendingState.style);
+      setIsRestoringPending(true);
 
-      if (pendingState.fileName) {
-        setNotice(`You're signed in. Re-upload ${pendingState.fileName} to finish generating your plushie.`);
-      } else {
-        setNotice("You're signed in. Re-upload your photo to finish generating your plushie.");
-      }
+      try {
+        setStyle(pendingState.style);
 
-      window.sessionStorage.removeItem(PENDING_GENERATE_KEY);
+        const restoredFile = await restoreFileFromPendingState(pendingState);
 
-      if (window.location.hash !== "#generator") {
-        window.location.hash = "generator";
+        if (!isMounted) return;
+
+        if (restoredFile) {
+          const restoredPreviewUrl = URL.createObjectURL(restoredFile);
+          setFile(restoredFile);
+          setPreviewUrl(restoredPreviewUrl);
+          setNotice("You're signed in. Your uploaded photo is still here — continue generating your plushie.");
+        } else if (pendingState.fileName) {
+          setNotice(`You're signed in. Re-upload ${pendingState.fileName} to finish generating your plushie.`);
+        } else {
+          setNotice("You're signed in. Re-upload your photo to finish generating your plushie.");
+        }
+      } catch (restoreError) {
+        if (!isMounted) return;
+
+        setNotice(
+          pendingState.fileName
+            ? `You're signed in. We couldn't restore ${pendingState.fileName}, so please upload it again.`
+            : "You're signed in. We couldn't restore your photo, so please upload it again."
+        );
+        setError(restoreError instanceof Error ? restoreError.message : "Could not restore your uploaded photo.");
+      } finally {
+        window.sessionStorage.removeItem(PENDING_GENERATE_KEY);
+
+        if (isMounted) {
+          setIsRestoringPending(false);
+
+          if (window.location.hash !== "#generator") {
+            window.location.hash = "generator";
+          }
+        }
       }
     }
 
@@ -96,13 +173,17 @@ export function UploadCard() {
     };
   }, []);
 
-  function onFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const nextFile = event.target.files?.[0] ?? null;
-    setFile(nextFile);
+  function resetResultState() {
     setResultId(null);
     setResultPreview(null);
     setResultRemainingCredits(null);
     setResultUsedFreeGeneration(false);
+  }
+
+  function onFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const nextFile = event.target.files?.[0] ?? null;
+    setFile(nextFile);
+    resetResultState();
     setError(null);
     setNotice(null);
 
@@ -115,13 +196,18 @@ export function UploadCard() {
     setPreviewUrl(localUrl);
   }
 
-  function savePendingGenerateState() {
-    if (typeof window === "undefined") return;
+  async function savePendingGenerateState() {
+    if (typeof window === "undefined" || !file) return;
+
+    const uploaded = await uploadPendingImage(file);
 
     const pendingState: PendingGenerateState = {
       intent: "generate",
       style,
-      fileName: file?.name ?? null
+      fileName: file.name ?? null,
+      mimeType: file.type ?? null,
+      storagePath: uploaded.storagePath,
+      publicUrl: uploaded.publicUrl
     };
 
     window.sessionStorage.setItem(PENDING_GENERATE_KEY, JSON.stringify(pendingState));
@@ -143,7 +229,7 @@ export function UploadCard() {
       } = await supabase.auth.getSession();
 
       if (!session?.access_token) {
-        savePendingGenerateState();
+        await savePendingGenerateState();
         router.push("/auth?next=%2F%23generator&intent=generate");
         return;
       }
@@ -164,7 +250,7 @@ export function UploadCard() {
 
       if (!response.ok || !data.ok || !data.resultId || !data.previewDataUrl) {
         if (data.code === "AUTH_REQUIRED") {
-          savePendingGenerateState();
+          await savePendingGenerateState();
           router.push("/auth?next=%2F%23generator&intent=generate");
           return;
         }
@@ -247,11 +333,11 @@ export function UploadCard() {
         <button
           type="button"
           onClick={handleGenerate}
-          disabled={isGenerating}
+          disabled={isGenerating || isRestoringPending}
           className="mt-5 flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-[var(--text)] px-5 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(37,21,5,0.18)] transition hover:opacity-95 disabled:opacity-60"
         >
-          {isGenerating ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
-          {isGenerating ? "Generating plushie…" : "Create my plushie"}
+          {isGenerating || isRestoringPending ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
+          {isRestoringPending ? "Restoring your photo…" : isGenerating ? "Generating plushie…" : "Create my plushie"}
         </button>
 
         <p className="mt-3 text-center text-sm text-[var(--muted)]">
