@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000" fill="none">
+  <rect width="800" height="1000" rx="40" fill="#FFF5EA"/>
+  <rect x="55" y="55" width="690" height="890" rx="30" fill="#FFE7CF"/>
+  <circle cx="255" cy="390" r="115" fill="#F0C78F"/>
+  <rect x="380" y="250" width="240" height="290" rx="120" fill="#D8A366"/>
+  <text x="400" y="850" text-anchor="middle" font-family="Arial" font-size="44" font-weight="700" fill="#73451B">Before → Plushie</text>
+</svg>
