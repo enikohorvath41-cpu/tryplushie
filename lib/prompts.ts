@@ -30,6 +30,9 @@ export function getPlushiePrompt(style: PlushieStyle) {
     "Preserve age cues, expression differences, pose differences, and overall likeness for each person.",
     "Preserve key traits such as hairstyle, clothing colors, clothing shape, and defining features in a simplified plush form.",
     "Keep the composition and person-to-person differences similar to the original image.",
+    "Preserve the full composition of the original image.",
+    "Do not crop, zoom, or cut off any subjects.",
+    "Ensure all people or animals remain fully visible in the frame.",
     "Use soft felt or fleece texture, visible stitched seams, rounded proportions, and a handcrafted toy feel.",
     "Give the plush a slightly oversized head, small soft body, short limbs, and a cuddly silhouette.",
     "Use small black bead eyes, a subtle embroidered mouth, and minimal plush-style facial detail without losing identity.",
@@ -53,6 +56,8 @@ export function getPlushiePrompt(style: PlushieStyle) {
       "Maintain unique facial differences between people, including eyes, smile, face shape, hairstyle, and hair differences.",
       "Keep clothing colours and overall appearance recognisable.",
       "Keep the composition similar to the original image.",
+      "Do not crop, zoom, or cut off any subjects in crochet style.",
+      "Ensure all people or animals remain fully visible in the frame.",
       "Make the result feel like a real handcrafted crochet plush toy while still clearly representing the original people."
     ].join(" "),
     luxury: [

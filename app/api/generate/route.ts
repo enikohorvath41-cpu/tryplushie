@@ -131,7 +131,7 @@ export async function POST(request: Request) {
         model: process.env.OPENAI_IMAGE_MODEL || "gpt-image-1.5",
         image: [new File([sourceBuffer], image.name || "upload.png", { type: sourceMimeType })],
         prompt,
-        size: "1024x1024"
+        size: "auto"
       });
 
       const base64 = response.data?.[0]?.b64_json;

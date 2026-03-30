@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, CreditCard, Loader2, Lock, Sparkles, Upload, Wand2 } from "lucide-react";
+import { CheckCircle2, CreditCard, Loader2, Lock, Sparkles, Upload } from "lucide-react";
 import { StylePicker } from "@/components/style-picker";
 import { supabase } from "@/lib/supabase";
 import type { PlushieStyle } from "@/types";
@@ -632,11 +632,13 @@ export function UploadCard() {
           <div className="flex flex-col items-center justify-center gap-3 rounded-[22px] bg-[rgba(255,248,241,0.9)] px-4 py-8 text-center">
             {previewUrl ? (
               <div className="relative">
-                <img
-                  src={previewUrl}
-                  alt="Selected preview"
-                  className="h-44 w-44 rounded-[24px] object-cover gold-ring sm:h-48 sm:w-48"
-                />
+                <div className="flex h-48 w-48 items-center justify-center overflow-hidden rounded-[24px] bg-[linear-gradient(180deg,#fff8f2,#f6dec0)] gold-ring sm:h-52 sm:w-52">
+                  <img
+                    src={previewUrl}
+                    alt="Selected preview"
+                    className="h-full w-full object-contain"
+                  />
+                </div>
                 <div className="absolute bottom-2 right-2 rounded-full bg-[var(--text)] px-3 py-1 text-xs font-semibold text-white shadow-[0_10px_24px_rgba(37,21,5,0.22)]">
                   Ready ✨
                 </div>
@@ -811,8 +813,14 @@ export function UploadCard() {
             </div>
           </div>
 
-          <div className="relative aspect-square overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,#fff8f2,#f6dec0)]">
-            <img src={previewUrl} alt="Uploaded photo preview" className="h-full w-full object-cover" />
+          <div className="relative overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,#fff8f2,#f6dec0)]">
+            <div className="flex min-h-[260px] items-center justify-center px-3 py-3 sm:min-h-[340px] sm:px-5 sm:py-5">
+              <img
+                src={previewUrl}
+                alt="Uploaded photo preview"
+                className="max-h-[520px] w-full object-contain"
+              />
+            </div>
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_15%,rgba(255,255,255,0.08)_46%,rgba(0,0,0,0.10)_100%)]" />
             <div className="pointer-events-none absolute inset-x-4 bottom-4 rounded-full bg-[rgba(37,21,5,0.74)] px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.22em] text-white backdrop-blur-sm sm:inset-x-8">
               {hasCredits ? "Use 1 credit now · Or pay once at checkout" : "Pay first · We create your plushie after checkout"}

@@ -173,7 +173,7 @@ async function handlePaidGeneration(session: Stripe.Checkout.Session) {
       model: process.env.OPENAI_IMAGE_MODEL || "gpt-image-1",
       image: [new File([sourceBuffer], fileName || "upload.jpg", { type: mimeType })],
       prompt,
-      size: "1024x1024"
+      size: "auto"
     });
 
     const base64 = response.data?.[0]?.b64_json;
