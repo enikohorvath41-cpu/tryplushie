@@ -48,7 +48,7 @@ export default function HomePage() {
               </p>
 
               <p className="mt-4 text-sm font-medium text-[var(--muted)]">
-                Free upload and style selection · No real generation cost before payment
+                Free upload and style selection
               </p>
 
               <p className="mt-2 text-sm font-semibold text-[var(--text)]">
