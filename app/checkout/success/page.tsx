@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, Sparkles } from "lucide-react";
 
@@ -26,7 +26,7 @@ const TIPS = [
   "Once ready, we’ll take you straight to your finished result."
 ];
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
@@ -223,5 +223,33 @@ export default function CheckoutSuccessPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+function CheckoutSuccessFallback() {
+  return (
+    <main className="min-h-screen px-4 py-6 sm:px-6">
+      <div className="mx-auto max-w-4xl">
+        <div className="glass-card rounded-[34px] p-6 sm:p-8">
+          <div className="mb-4 inline-flex rounded-full bg-[rgba(183,125,63,0.12)] p-3 text-[var(--gold-strong)]">
+            <Loader2 className="animate-spin" size={24} />
+          </div>
+          <h1 className="text-[2.4rem] font-semibold leading-[1.02] tracking-[-0.045em] text-[var(--text)] sm:text-[3.2rem]">
+            Loading your checkout…
+          </h1>
+          <p className="mt-4 max-w-3xl text-[15px] leading-8 text-[var(--muted)] sm:text-base">
+            We&apos;re checking your payment and preparing your plushie status now.
+          </p>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={<CheckoutSuccessFallback />}>
+      <CheckoutSuccessInner />
+    </Suspense>
   );
 }
