@@ -77,3 +77,27 @@ img {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+.tp-brown-button {
+  color: #ffffff !important;
+}
+
+.tp-brown-button svg,
+.tp-brown-button span,
+.tp-brown-button p {
+  color: #ffffff !important;
+}
+
+a[class*="bg-[var(--text)]"],
+button[class*="bg-[var(--text)]"] {
+  color: #ffffff !important;
+}
+
+a[class*="bg-[var(--text)]"] svg,
+a[class*="bg-[var(--text)]"] span,
+a[class*="bg-[var(--text)]"] p,
+button[class*="bg-[var(--text)]"] svg,
+button[class*="bg-[var(--text)]"] span,
+button[class*="bg-[var(--text)]"] p {
+  color: #ffffff !important;
+}

@@ -30,6 +30,88 @@ function isPlushieStyle(value: string): value is PlushieStyle {
   return ["classic", "crochet", "luxury"].includes(value);
 }
 
+async function getGeneratedResultIdFromSessionId(sessionId: string) {
+  const { data, error } = await supabaseServer
+    .from("generations")
+    .select("id")
+    .eq("checkout_session_id", sessionId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data?.id ?? null;
+}
+
+export async function GET(request: Request) {
+  try {
+    const url = new URL(request.url);
+    const sessionId = url.searchParams.get("session_id");
+
+    if (!sessionId) {
+      return NextResponse.json({ ok: false, error: "Missing session_id." }, { status: 400 });
+    }
+
+    const stripe = getStripe();
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const purchaseType =
+      typeof session.metadata?.purchaseType === "string" ? session.metadata.purchaseType : "single_unlock";
+
+    if (session.payment_status !== "paid") {
+      return NextResponse.json({
+        ok: true,
+        ready: false,
+        purchaseType,
+        paymentStatus: session.payment_status ?? null,
+        resultId: null
+      });
+    }
+
+    if (purchaseType === "paid_generation") {
+      const resultId = await getGeneratedResultIdFromSessionId(session.id);
+
+      return NextResponse.json({
+        ok: true,
+        ready: Boolean(resultId),
+        purchaseType,
+        paymentStatus: session.payment_status ?? null,
+        resultId
+      });
+    }
+
+    if (purchaseType === "single_unlock") {
+      const resultId = typeof session.metadata?.resultId === "string" ? session.metadata.resultId : null;
+
+      return NextResponse.json({
+        ok: true,
+        ready: Boolean(resultId),
+        purchaseType,
+        paymentStatus: session.payment_status ?? null,
+        resultId
+      });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      ready: true,
+      purchaseType,
+      paymentStatus: session.payment_status ?? null,
+      resultId: null
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: error instanceof Error ? error.message : "Could not check checkout status."
+      },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as CheckoutBody;

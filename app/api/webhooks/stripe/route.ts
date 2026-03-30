@@ -19,8 +19,76 @@ function isPlushieStyle(value: string): value is PlushieStyle {
   return value === "classic" || value === "crochet" || value === "luxury";
 }
 
+async function getExistingGenerationBySessionId(checkoutSessionId: string) {
+  const { data, error } = await supabaseServer
+    .from("generations")
+    .select("id")
+    .eq("checkout_session_id", checkoutSessionId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data?.id ?? null;
+}
+
+async function ensurePaidGenerationPaymentRow(params: {
+  userId: string;
+  generationId: string;
+  checkoutSessionId: string;
+  amountGbp: number;
+}) {
+  const { data: existingPayment, error: existingPaymentError } = await supabaseServer
+    .from("payments")
+    .select("id")
+    .eq("stripe_session_id", params.checkoutSessionId)
+    .maybeSingle();
+
+  if (existingPaymentError) {
+    throw new Error(existingPaymentError.message);
+  }
+
+  if (existingPayment?.id) {
+    return;
+  }
+
+  const { error: paymentInsertError } = await supabaseServer.from("payments").insert({
+    user_id: params.userId,
+    generation_id: params.generationId,
+    stripe_session_id: params.checkoutSessionId,
+    payment_type: "paid_generation",
+    credits_added: 0,
+    amount_gbp: params.amountGbp,
+    status: "paid"
+  });
+
+  if (paymentInsertError) {
+    throw new Error(paymentInsertError.message);
+  }
+}
+
 async function handlePaidGeneration(session: Stripe.Checkout.Session) {
+  const existingGenerationId = await getExistingGenerationBySessionId(session.id);
+
   const userId = typeof session.metadata?.userId === "string" ? session.metadata.userId : null;
+  const amountGbp = typeof session.amount_total === "number" ? session.amount_total / 100 : 2.99;
+
+  if (existingGenerationId) {
+    if (userId) {
+      await ensurePaidGenerationPaymentRow({
+        userId,
+        generationId: existingGenerationId,
+        checkoutSessionId: session.id,
+        amountGbp
+      });
+    }
+
+    return existingGenerationId;
+  }
+
   const styleValue = typeof session.metadata?.style === "string" ? session.metadata.style : null;
   const publicUrl = typeof session.metadata?.publicUrl === "string" ? session.metadata.publicUrl : null;
   const fileName = typeof session.metadata?.fileName === "string" ? session.metadata.fileName : "upload.jpg";
@@ -82,19 +150,14 @@ async function handlePaidGeneration(session: Stripe.Checkout.Session) {
     throw new Error(insertError.message);
   }
 
-  const { error: paymentInsertError } = await supabaseServer.from("payments").insert({
-    user_id: userId,
-    generation_id: generationId,
-    stripe_session_id: session.id,
-    payment_type: "paid_generation",
-    credits_added: 0,
-    amount_gbp: 2.99,
-    status: "paid"
+  await ensurePaidGenerationPaymentRow({
+    userId,
+    generationId,
+    checkoutSessionId: session.id,
+    amountGbp
   });
 
-  if (paymentInsertError) {
-    throw new Error(paymentInsertError.message);
-  }
+  return generationId;
 }
 
 export async function POST(request: Request) {
