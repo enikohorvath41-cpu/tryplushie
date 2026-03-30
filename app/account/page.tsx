@@ -227,13 +227,26 @@ export default function AccountPage() {
                 >
                   <div className="relative aspect-square overflow-hidden bg-[linear-gradient(180deg,#fff8f1,#f5dcc0)]">
                     {item.preview_image_url ? (
-                      <img
-                        src={item.preview_image_url}
-                        alt="Saved plushie preview"
-                        className={`h-full w-full object-cover transition group-hover:scale-[1.02] ${
-                          item.is_unlocked ? "" : "blur-[1.6px] brightness-[0.98]"
-                        }`}
-                      />
+                      <>
+                        <img
+                          src={item.preview_image_url}
+                          alt="Saved plushie preview"
+                          className={`h-full w-full object-cover transition group-hover:scale-[1.02] ${
+                            item.is_unlocked ? "" : "scale-[1.02] blur-[4.5px] brightness-[0.78] saturate-[0.88]"
+                          }`}
+                        />
+
+                        {!item.is_unlocked ? (
+                          <>
+                            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_12%,rgba(255,255,255,0.08)_42%,rgba(0,0,0,0.18)_100%)]" />
+                            <div className="pointer-events-none absolute inset-x-[-16%] top-[28%] rotate-[-15deg] bg-[rgba(255,255,255,0.52)] py-4 shadow-[0_8px_30px_rgba(37,21,5,0.12)] backdrop-blur-md">
+                              <div className="text-center text-[13px] font-semibold uppercase tracking-[0.30em] text-white drop-shadow-[0_2px_8px_rgba(37,21,5,0.35)] sm:text-[15px]">
+                                TRYPLUSHIE · PREVIEW ONLY · TRYPLUSHIE
+                              </div>
+                            </div>
+                          </>
+                        ) : null}
+                      </>
                     ) : (
                       <div className="flex h-full items-center justify-center text-[var(--gold-strong)]">
                         <ImageIcon size={28} />
@@ -255,7 +268,7 @@ export default function AccountPage() {
                     </div>
 
                     {!item.is_unlocked ? (
-                      <div className="pointer-events-none absolute inset-x-4 bottom-4 rounded-full bg-[rgba(37,21,5,0.68)] px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.22em] text-white backdrop-blur-sm">
+                      <div className="pointer-events-none absolute inset-x-4 bottom-4 rounded-full bg-[rgba(37,21,5,0.74)] px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.22em] text-white backdrop-blur-sm">
                         <Lock size={12} className="mr-2 inline-block" />
                         HD locked
                       </div>

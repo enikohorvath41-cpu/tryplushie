@@ -3,8 +3,15 @@ export function cn(...classes: Array<string | undefined | false | null>) {
 }
 
 export function absoluteUrl(path: string) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-  return new URL(path, siteUrl).toString();
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ||
+    process.env.VERCEL_URL ||
+    "http://localhost:3000";
+
+  const normalizedSiteUrl = siteUrl.startsWith("http") ? siteUrl : `https://${siteUrl}`;
+
+  return new URL(path, normalizedSiteUrl).toString();
 }
 
 export function formatPrice(value: number, currency = "GBP") {

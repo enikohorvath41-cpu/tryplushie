@@ -162,10 +162,11 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
                   <a
                     href={result.hdDataUrl}
                     download={`tryplushie-${result.id}.png`}
-                    className="flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-[var(--text)] px-5 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(37,21,5,0.18)] transition hover:opacity-95"
+                    className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-[var(--text)] px-5 text-sm font-semibold shadow-[0_18px_40px_rgba(37,21,5,0.18)] transition hover:opacity-95"
+                    style={{ color: "#ffffff" }}
                   >
-                    <Download size={18} />
-                    Download HD image
+                    <Download size={18} color="#ffffff" />
+                    <span style={{ color: "#ffffff" }}>Download HD image</span>
                   </a>
                 </div>
               )}
