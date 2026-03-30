@@ -20,31 +20,27 @@ export const plushieStyles: Array<{ value: PlushieStyle; label: string; descript
 
 export function getPlushiePrompt(style: PlushieStyle) {
   const base = [
-    "Transform the uploaded image into a premium plush version of the original subject.",
-    "The plush result must look like a faithful like-for-like plush recreation of the uploaded image, not a generic cute replacement.",
-    "Keep the original subject immediately recognizable.",
-    "CRITICAL: preserve identity accuracy and exact subject separation.",
-    "If there are multiple people or animals, every subject must remain clearly distinct, recognizable, and positioned correctly.",
-    "Do not merge faces, duplicate faces, average features, or turn different subjects into matching copies.",
-    "Preserve exact subject count.",
-    "Preserve the original composition, framing, spacing, pose relationships, and left-to-right placement of all subjects.",
-    "Preserve the full composition of the original image.",
-    "Do not crop, zoom, reframe, cut off, or remove any subject.",
-    "Ensure all people or animals remain fully visible in the frame.",
-    "Keep the camera angle and perspective similar to the original image.",
-    "Preserve pose, head angle, gaze direction, facial expression, body orientation, and interaction between subjects.",
-    "Preserve age cues, gender presentation, proportions, and overall likeness of each individual.",
-    "Preserve unique facial structure, eye spacing, eye shape, eyebrow shape, nose shape, mouth shape, smile style, cheek shape, jawline, chin shape, and ear placement.",
-    "Preserve hairstyle, hairline, parting, hair length, hair volume, curl pattern, hair texture, and major hair details.",
-    "Preserve skin tone or fur colour accurately.",
-    "Preserve distinctive markings, patches, muzzle colouring, chest colouring, ear colouring, and any breed-defining or subject-defining traits.",
-    "Preserve clothing colours, clothing shape, collars, accessories, and recognisable outfit details.",
-    "Make the result clearly plush, but do not lose likeness.",
-    "Use plush materials, soft fabric texture, stitched construction, rounded plush proportions, and a handcrafted premium collectible feel.",
-    "Keep expressions and personality intact so the plush still feels emotionally like the original subject.",
-    "Use soft studio-quality lighting, clean shading, and a simple premium background treatment.",
-    "The final image should feel like a high-quality custom plush made from the original photo, with strong likeness, strong composition preservation, and giftable premium appeal."
-  ].join(" ");
+  "Transform the uploaded image into a premium plush version of the same subjects.",
+  "The result should feel like a handcrafted plush toy recreation of the original photo.",
+  "Balance is critical: preserve recognisability while clearly stylising into a plush toy.",
+  "Do not aim for perfect realism — aim for a believable plush interpretation that still looks like the same people or animals.",
+
+  "Keep all subjects clearly distinct, recognisable, and in the same left-to-right order.",
+  "Preserve subject count, composition, pose relationships, and overall arrangement.",
+  "Do not crop, zoom, or remove any subjects.",
+  "Keep camera angle and perspective similar to the original.",
+
+  "Preserve key identity features: face shape, eyes, brows, nose, smile, and hairstyle.",
+  "Maintain likeness but allow soft stylisation typical of plush toys.",
+  "Do not merge faces or make different subjects look identical.",
+
+  "Convert materials into plush: soft fabric, stitched edges, gentle seams, and a tactile toy texture.",
+  "Use slightly simplified facial features and softly rounded forms to enhance plush realism.",
+  "Allow subtle stylisation (slightly larger eyes, softer cheeks) but keep identity recognisable.",
+
+  "Use soft lighting, clean background, and a premium product-style presentation.",
+  "The final result should feel like a high-quality custom plush toy made from this exact photo — cute, recognisable, and giftable."
+].join(" ");
 
   const styleMap: Record<PlushieStyle, string> = {
     classic: [
