@@ -25,7 +25,7 @@ export function getPlushiePrompt(style: PlushieStyle) {
     "Highest priority: preserve identity.",
     "Second priority: preserve composition.",
     "Keep every person or animal immediately recognisable.",
-    "If multiple subjects are present, keep them clearly distinct and in the same left-to-right order.",
+    "If multiple subjects are present, keep them clearly distinct, separated, and in the same left-to-right order.",
     "Do not merge faces, duplicate subjects, average features, replace identity, or turn different subjects into matching copies.",
     "Preserve exact subject count, framing, spacing, scale relationships, pose relationships, and overall arrangement.",
     "Preserve the full composition of the original image.",
@@ -33,15 +33,18 @@ export function getPlushiePrompt(style: PlushieStyle) {
     "Keep camera angle and perspective close to the original.",
     "Preserve pose, head angle, gaze direction, expression, gesture, and interaction between subjects.",
     "Preserve age cues, body proportions, and overall likeness.",
-    "Preserve exact facial identity: face shape, eye spacing, eye shape, brows, nose, mouth, smile, cheeks, jawline, chin, and ears.",
+    "Preserve exact facial identity: face shape, eye spacing, eye shape, brows, nose, mouth, smile, cheeks, jawline, chin, ears, and identity-defining facial proportions.",
     "Preserve asymmetry, natural imperfections, and unique real-life features.",
     "Do not beautify, idealise, glamorise, or make faces more generic, symmetrical, younger, or more cartoon-perfect.",
+    "Do not clean up the face into a generic plush character.",
     "Preserve hairstyle, hairline, parting, length, volume, curl pattern, and texture.",
     "Preserve skin tone or fur colour accurately.",
     "Preserve distinctive markings, patches, muzzle colouring, chest colouring, freckles, facial hair, collars, accessories, and recognisable outfit details.",
+    "Keep the emotional feel of the original photo so the plush still feels like the same real people or animals.",
     "Make it clearly plush by changing material, not identity.",
     "Use soft plush fabric, stitched construction, premium toy craftsmanship, and gentle plush softness.",
     "Do not over-exaggerate anatomy or enlarge heads too much.",
+    "Do not simplify facial structure into a generic doll template.",
     "Use soft clean lighting and a simple premium background treatment.",
     "The final image should feel like a bespoke plush made directly from this exact photo, with strong likeness and strong composition preservation."
   ].join(" ");
@@ -50,7 +53,8 @@ export function getPlushiePrompt(style: PlushieStyle) {
     classic: [
       "Style: classic cuddly plush toy.",
       "Use velvety fabric, soft fleece texture, smooth seams, and a timeless premium soft-toy finish.",
-      "Keep realistic plush proportions and avoid over-stylising the face."
+      "Keep realistic plush proportions and avoid over-stylising the face.",
+      "The plush should feel like the same real people or animals translated into soft plush form."
     ].join(" "),
     crochet: [
       "Style: handmade crochet plush toy.",
@@ -58,12 +62,14 @@ export function getPlushiePrompt(style: PlushieStyle) {
       "Keep strong likeness under the crochet treatment.",
       "Do not simplify different faces into one repeated crochet face.",
       "Do not replace specific identity with a generic amigurumi character look.",
+      "Keep facial differences, expression differences, and subject separation clear.",
       "Keep all subjects fully visible and composition close to the original."
     ].join(" "),
     luxury: [
       "Style: premium luxury plush collectible.",
       "Use ultra-soft premium materials, elegant stitching, refined finishing, and polished high-end collectible presentation.",
-      "Keep the result faithful to the original image rather than stylised away from it."
+      "Keep the result faithful to the original image rather than stylised away from it.",
+      "Preserve individuality with strong likeness and premium realism in the plush treatment."
     ].join(" ")
   };
 
