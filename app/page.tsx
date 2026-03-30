@@ -1,17 +1,25 @@
 import Link from "next/link";
-import { Check, CreditCard, Heart, ImageIcon, Sparkles, UserRound } from "lucide-react";
+import { Check, CreditCard, Heart, ImageIcon, UserRound } from "lucide-react";
 import { UploadCard } from "@/components/upload-card";
 
 const examples = [
   {
-    title: "Selfie to plushie",
-    note: "Cute profile pic energy",
-    tag: "People"
+    title: "Family to plushie",
+    note: "A like-for-like plush version that still feels like your real photo.",
+    tag: "People",
+    beforeImage: "/examples/family-before.jpg",
+    afterImage: "/examples/family-after.png",
+    beforeLabel: "Before",
+    afterLabel: "After"
   },
   {
     title: "Pet to plushie",
-    note: "Perfect for animal lovers",
-    tag: "Pets"
+    note: "Perfect for animal lovers, gifts, and keepsake-style pet portraits.",
+    tag: "Pets",
+    beforeImage: "/examples/dog-before.jpg",
+    afterImage: "/examples/dog-after.png",
+    beforeLabel: "Before",
+    afterLabel: "After"
   }
 ];
 
@@ -103,7 +111,7 @@ export default function HomePage() {
                 Example results
               </p>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-                Use your own licensed, original, or permission-cleared photos for real generations.
+                Real photo in. Plushie version out. These examples show the kind of faithful, giftable result TryPlushie is built to create.
               </p>
             </div>
 
@@ -118,24 +126,42 @@ export default function HomePage() {
           <div className="grid gap-4 md:grid-cols-2">
             {examples.map((example, index) => (
               <div key={example.title} className="glass-card rounded-[28px] p-4 sm:p-5">
-                <div className="relative mb-4 aspect-[4/4.1] overflow-hidden rounded-[22px] bg-[linear-gradient(180deg,#fff8f1,#f7e0c3)] p-4">
-                  <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--gold-strong)]">
-                    Example 0{index + 1}
+                <div className="mb-4 rounded-[22px] border border-[rgba(173,118,63,0.14)] bg-[linear-gradient(180deg,#fff8f1,#f7e0c3)] p-4">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div className="rounded-full bg-white/90 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--gold-strong)]">
+                      Example 0{index + 1}
+                    </div>
+
+                    <div className="rounded-full bg-[rgba(37,21,5,0.78)] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white">
+                      {example.tag}
+                    </div>
                   </div>
 
-                  <div className="absolute right-4 top-4 rounded-full bg-[rgba(37,21,5,0.78)] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white">
-                    {example.tag}
-                  </div>
-
-                  <div className="flex h-full items-end rounded-[18px] border border-[rgba(173,118,63,0.14)] bg-white/35 p-4">
-                    <div className="max-w-[220px]">
-                      <div className="mb-3 inline-flex rounded-full bg-[rgba(183,125,63,0.12)] p-2.5 text-[var(--gold-strong)]">
-                        <Sparkles size={16} />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-[18px] border border-[rgba(173,118,63,0.14)] bg-white/72 p-3">
+                      <div className="mb-3 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--gold-strong)] w-fit">
+                        {example.beforeLabel}
                       </div>
-                      <p className="text-sm font-semibold text-[var(--text)]">Preview concept</p>
-                      <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
-                        Your uploaded photo becomes a soft, cuddly plushie-style result.
-                      </p>
+                      <div className="overflow-hidden rounded-[16px] bg-[rgba(255,248,241,0.8)]">
+                        <img
+                          src={example.beforeImage}
+                          alt={`${example.title} before`}
+                          className="h-[220px] w-full object-cover"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="rounded-[18px] border border-[rgba(173,118,63,0.14)] bg-white/72 p-3">
+                      <div className="mb-3 rounded-full bg-[rgba(37,21,5,0.82)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-white w-fit">
+                        {example.afterLabel}
+                      </div>
+                      <div className="overflow-hidden rounded-[16px] bg-[rgba(255,248,241,0.8)]">
+                        <img
+                          src={example.afterImage}
+                          alt={`${example.title} after`}
+                          className="h-[220px] w-full object-cover"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

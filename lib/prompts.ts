@@ -20,50 +20,57 @@ export const plushieStyles: Array<{ value: PlushieStyle; label: string; descript
 
 export function getPlushiePrompt(style: PlushieStyle) {
   const base = [
-    "Transform the uploaded subject into a cute, high-quality plush toy.",
-    "Keep the subject clearly recognizable while simplifying it into a plush doll form.",
-    "CRITICAL: preserve identity accuracy.",
-    "Each person must remain clearly recognizable as the original individual.",
-    "If multiple people are present, they must not look identical.",
-    "Do not merge faces, duplicate faces, or blend different people into one repeated look.",
-    "Maintain unique facial features such as eye shape, smile, face structure, hairstyle, hair length, and hair differences.",
-    "Preserve age cues, expression differences, pose differences, and overall likeness for each person.",
-    "Preserve key traits such as hairstyle, clothing colors, clothing shape, and defining features in a simplified plush form.",
-    "Keep the composition and person-to-person differences similar to the original image.",
+    "Transform the uploaded image into a premium plush version of the original subject.",
+    "The plush result must look like a faithful like-for-like plush recreation of the uploaded image, not a generic cute replacement.",
+    "Keep the original subject immediately recognizable.",
+    "CRITICAL: preserve identity accuracy and exact subject separation.",
+    "If there are multiple people or animals, every subject must remain clearly distinct, recognizable, and positioned correctly.",
+    "Do not merge faces, duplicate faces, average features, or turn different subjects into matching copies.",
+    "Preserve exact subject count.",
+    "Preserve the original composition, framing, spacing, pose relationships, and left-to-right placement of all subjects.",
     "Preserve the full composition of the original image.",
-    "Do not crop, zoom, or cut off any subjects.",
+    "Do not crop, zoom, reframe, cut off, or remove any subject.",
     "Ensure all people or animals remain fully visible in the frame.",
-    "Use soft felt or fleece texture, visible stitched seams, rounded proportions, and a handcrafted toy feel.",
-    "Give the plush a slightly oversized head, small soft body, short limbs, and a cuddly silhouette.",
-    "Use small black bead eyes, a subtle embroidered mouth, and minimal plush-style facial detail without losing identity.",
-    "Use soft studio lighting, smooth shading, and a clean or gently blurred background.",
-    "The final result should feel like a charming, collectible plushie that is cute, cozy, giftable, and premium."
+    "Keep the camera angle and perspective similar to the original image.",
+    "Preserve pose, head angle, gaze direction, facial expression, body orientation, and interaction between subjects.",
+    "Preserve age cues, gender presentation, proportions, and overall likeness of each individual.",
+    "Preserve unique facial structure, eye spacing, eye shape, eyebrow shape, nose shape, mouth shape, smile style, cheek shape, jawline, chin shape, and ear placement.",
+    "Preserve hairstyle, hairline, parting, hair length, hair volume, curl pattern, hair texture, and major hair details.",
+    "Preserve skin tone or fur colour accurately.",
+    "Preserve distinctive markings, patches, muzzle colouring, chest colouring, ear colouring, and any breed-defining or subject-defining traits.",
+    "Preserve clothing colours, clothing shape, collars, accessories, and recognisable outfit details.",
+    "Make the result clearly plush, but do not lose likeness.",
+    "Use plush materials, soft fabric texture, stitched construction, rounded plush proportions, and a handcrafted premium collectible feel.",
+    "Keep expressions and personality intact so the plush still feels emotionally like the original subject.",
+    "Use soft studio-quality lighting, clean shading, and a simple premium background treatment.",
+    "The final image should feel like a high-quality custom plush made from the original photo, with strong likeness, strong composition preservation, and giftable premium appeal."
   ].join(" ");
 
   const styleMap: Record<PlushieStyle, string> = {
     classic: [
       "Style direction: classic cuddly plush toy.",
-      "Use velvety fabric, warm soft colors, gentle fabric folds, and a timeless collectible plush aesthetic.",
-      "Keep likeness preservation especially strong so the plush still feels clearly based on the original person or people."
+      "Use velvety fabric, soft fleece texture, smooth seams, plush stuffing, and a timeless premium soft-toy finish.",
+      "Keep likeness preservation extremely strong.",
+      "The plush should look like the same real person, family, or pet translated into a classic plush form rather than a generic doll."
     ].join(" "),
     crochet: [
       "Style direction: handmade crochet plush toy.",
-      "Use handmade crochet or amigurumi texture.",
-      "Use soft yarn stitches, visible knitted patterns, cozy handcrafted detail, and a warm artisan feel.",
-      "CRITICAL: preserve the identity of each person exactly.",
-      "If multiple people are present, they must remain clearly different individuals.",
-      "Do not make faces identical.",
-      "Maintain unique facial differences between people, including eyes, smile, face shape, hairstyle, and hair differences.",
-      "Keep clothing colours and overall appearance recognisable.",
+      "Use handmade crochet or amigurumi texture, soft yarn stitches, visible knitted patterns, and warm handcrafted detail.",
+      "CRITICAL: preserve the identity of each subject exactly even after crochet stylisation.",
+      "If multiple people or animals are present, each crochet plush must remain clearly different from the others.",
+      "Do not simplify different faces into one repeated crochet face.",
+      "Maintain unique facial differences, hair differences, expression differences, body differences, and subject-to-subject separation.",
+      "Keep clothing colours, fur colours, and recognisable details accurate.",
       "Keep the composition similar to the original image.",
       "Do not crop, zoom, or cut off any subjects in crochet style.",
-      "Ensure all people or animals remain fully visible in the frame.",
-      "Make the result feel like a real handcrafted crochet plush toy while still clearly representing the original people."
+      "Ensure all subjects remain fully visible in the frame.",
+      "Make the result feel like a real handcrafted crochet plush version of the original photo while still preserving strong likeness."
     ].join(" "),
     luxury: [
       "Style direction: premium luxury plush collectible.",
-      "Use ultra-soft premium materials, refined stitching, elegant presentation, and a polished high-end gift look.",
-      "Preserve likeness and individuality while making the result feel polished and premium."
+      "Use ultra-soft premium materials, elegant stitching, refined finishing, premium plush texture, and a polished high-end collectible presentation.",
+      "Preserve likeness and individuality with extremely strong accuracy.",
+      "The final plush should feel bespoke, premium, and faithful to the original image rather than stylised away from it."
     ].join(" ")
   };
 
