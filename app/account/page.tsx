@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CreditCard, ImageIcon, Loader2, Lock, Plus, Sparkles } from "lucide-react";
+import { CreditCard, ImageIcon, Loader2, Lock, LogOut, Plus, Sparkles } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type ProfileRow = {
@@ -36,6 +36,7 @@ function formatDate(value: string | null) {
 export default function AccountPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [signingOut, setSigningOut] = useState(false);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [generations, setGenerations] = useState<GenerationRow[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +97,25 @@ export default function AccountPage() {
     };
   }, [router]);
 
+  async function handleSignOut() {
+    setSigningOut(true);
+    setError(null);
+
+    try {
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        throw error;
+      }
+
+      router.push("/");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not sign out right now.");
+      setSigningOut(false);
+    }
+  }
+
   return (
     <main className="min-h-screen px-4 py-5 sm:px-6 sm:py-6">
       <div className="mx-auto max-w-6xl space-y-5">
@@ -126,8 +146,20 @@ export default function AccountPage() {
               </p>
             </div>
 
-            <div className="rounded-full bg-white/80 px-4 py-2 text-sm font-semibold text-[var(--gold-strong)]">
-              {profile?.email ?? "TryPlushie account"}
+            <div className="flex flex-col items-stretch gap-3 sm:items-end">
+              <div className="rounded-full bg-white/80 px-4 py-2 text-sm font-semibold text-[var(--gold-strong)]">
+                {profile?.email ?? "TryPlushie account"}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSignOut}
+                disabled={signingOut}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[rgba(173,118,63,0.2)] bg-white/70 px-4 text-sm font-semibold text-[var(--text)] transition hover:bg-white/85 disabled:opacity-60"
+              >
+                {signingOut ? <Loader2 className="animate-spin" size={16} /> : <LogOut size={16} />}
+                {signingOut ? "Signing out…" : "Log out"}
+              </button>
             </div>
           </div>
 

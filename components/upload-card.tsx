@@ -2,21 +2,16 @@
 
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Sparkles, Upload } from "lucide-react";
+import { Loader2, Lock, Sparkles, Upload } from "lucide-react";
 import { StylePicker } from "@/components/style-picker";
-import { GenerationStatus } from "@/components/generation-status";
-import { ResultCard } from "@/components/result-card";
 import { supabase } from "@/lib/supabase";
 import type { PlushieStyle } from "@/types";
 
-type GenerateResponse = {
+type CheckoutResponse = {
   ok?: boolean;
   error?: string;
   code?: string;
-  resultId?: string;
-  previewDataUrl?: string;
-  remainingCredits?: number;
-  usedFreeGeneration?: boolean;
+  url?: string;
 };
 
 type PendingGenerateState = {
@@ -32,6 +27,7 @@ const PENDING_GENERATE_KEY = "tryplushie_pending_generate";
 const PENDING_UPLOADS_BUCKET = "pending-uploads";
 const MAX_IMAGE_DIMENSION = 1280;
 const JPEG_QUALITY = 0.86;
+const PAID_GENERATION_PRICE = "£2.99";
 
 function makePendingUploadPath(file: File) {
   const extension = file.name.includes(".") ? file.name.split(".").pop() : "jpg";
@@ -130,26 +126,17 @@ async function restoreFileFromPendingState(pendingState: PendingGenerateState) {
   return new File([blob], fileName, { type: mimeType });
 }
 
-async function parseGenerateResponse(response: Response) {
+async function parseCheckoutResponse(response: Response) {
   const contentType = response.headers.get("content-type") || "";
 
   if (contentType.includes("application/json")) {
-    return (await response.json()) as GenerateResponse;
-  }
-
-  const rawText = await response.text();
-
-  if (/Request Entity Too Large/i.test(rawText)) {
-    return {
-      ok: false,
-      error: "That photo is too large right now. Please try another photo or a slightly smaller image."
-    } satisfies GenerateResponse;
+    return (await response.json()) as CheckoutResponse;
   }
 
   return {
     ok: false,
-    error: rawText || "Could not generate your plushie."
-  } satisfies GenerateResponse;
+    error: (await response.text()) || "Could not start checkout."
+  } satisfies CheckoutResponse;
 }
 
 export function UploadCard() {
@@ -157,11 +144,8 @@ export function UploadCard() {
   const [style, setStyle] = useState<PlushieStyle>("classic");
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [resultId, setResultId] = useState<string | null>(null);
-  const [resultPreview, setResultPreview] = useState<string | null>(null);
-  const [resultRemainingCredits, setResultRemainingCredits] = useState<number | null>(null);
-  const [resultUsedFreeGeneration, setResultUsedFreeGeneration] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [pendingUpload, setPendingUpload] = useState<{ storagePath: string; publicUrl: string } | null>(null);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isRestoringPending, setIsRestoringPending] = useState(false);
   const [isPreparingImage, setIsPreparingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -205,6 +189,11 @@ export function UploadCard() {
 
       try {
         setStyle(pendingState.style);
+        setPendingUpload(
+          pendingState.storagePath && pendingState.publicUrl
+            ? { storagePath: pendingState.storagePath, publicUrl: pendingState.publicUrl }
+            : null
+        );
 
         const restoredFile = await restoreFileFromPendingState(pendingState);
 
@@ -214,15 +203,16 @@ export function UploadCard() {
           const restoredPreviewUrl = URL.createObjectURL(restoredFile);
           setFile(restoredFile);
           setPreviewUrl(restoredPreviewUrl);
-          setNotice("You're signed in. Your uploaded photo is still here — continue generating your plushie.");
+          setNotice("You're signed in. Your uploaded photo is still here — continue to checkout and we’ll create your plushie after payment.");
         } else if (pendingState.fileName) {
-          setNotice(`You're signed in. Re-upload ${pendingState.fileName} to finish generating your plushie.`);
+          setNotice(`You're signed in. Re-upload ${pendingState.fileName} to continue.`);
         } else {
-          setNotice("You're signed in. Re-upload your photo to finish generating your plushie.");
+          setNotice("You're signed in. Re-upload your photo to continue.");
         }
       } catch (restoreError) {
         if (!isMounted) return;
 
+        setPendingUpload(null);
         setNotice(
           pendingState.fileName
             ? `You're signed in. We couldn't restore ${pendingState.fileName}, so please upload it again.`
@@ -249,19 +239,16 @@ export function UploadCard() {
     };
   }, []);
 
-  function resetResultState() {
-    setResultId(null);
-    setResultPreview(null);
-    setResultRemainingCredits(null);
-    setResultUsedFreeGeneration(false);
+  function resetPendingSelection() {
+    setError(null);
+    setNotice(null);
+    setPendingUpload(null);
   }
 
   async function onFileChange(event: ChangeEvent<HTMLInputElement>) {
     const nextFile = event.target.files?.[0] ?? null;
 
-    resetResultState();
-    setError(null);
-    setNotice(null);
+    resetPendingSelection();
 
     if (!nextFile) {
       setFile(null);
@@ -277,7 +264,7 @@ export function UploadCard() {
 
       setFile(compressedFile);
       setPreviewUrl(localUrl);
-      setNotice("Photo optimised and ready to generate.");
+      setNotice("Photo optimised and ready. Pay only when you're happy to create it.");
     } catch (compressionError) {
       setFile(null);
       setPreviewUrl(null);
@@ -289,10 +276,24 @@ export function UploadCard() {
     }
   }
 
+  async function ensurePendingUpload() {
+    if (!file) {
+      throw new Error("Please upload a photo first.");
+    }
+
+    if (pendingUpload) {
+      return pendingUpload;
+    }
+
+    const uploaded = await uploadPendingImage(file);
+    setPendingUpload(uploaded);
+    return uploaded;
+  }
+
   async function savePendingGenerateState() {
     if (typeof window === "undefined" || !file) return;
 
-    const uploaded = await uploadPendingImage(file);
+    const uploaded = await ensurePendingUpload();
 
     const pendingState: PendingGenerateState = {
       intent: "generate",
@@ -306,13 +307,13 @@ export function UploadCard() {
     window.sessionStorage.setItem(PENDING_GENERATE_KEY, JSON.stringify(pendingState));
   }
 
-  async function handleGenerate() {
+  async function handleCheckout() {
     if (!file) {
       setError("Please upload a photo first.");
       return;
     }
 
-    setIsGenerating(true);
+    setIsCheckingOut(true);
     setError(null);
     setNotice(null);
 
@@ -327,48 +328,39 @@ export function UploadCard() {
         return;
       }
 
-      const formData = new FormData();
-      formData.append("image", file);
-      formData.append("style", style);
+      const uploaded = await ensurePendingUpload();
 
-      const response = await fetch("/api/generate", {
+      const response = await fetch("/api/checkout", {
         method: "POST",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`
         },
-        body: formData
+        body: JSON.stringify({
+          style,
+          storagePath: uploaded.storagePath,
+          publicUrl: uploaded.publicUrl,
+          fileName: file.name,
+          mimeType: file.type
+        })
       });
 
-      const data = await parseGenerateResponse(response);
+      const data = await parseCheckoutResponse(response);
 
-      if (!response.ok || !data.ok || !data.resultId || !data.previewDataUrl) {
+      if (!response.ok || !data.url) {
         if (data.code === "AUTH_REQUIRED") {
           await savePendingGenerateState();
           router.push("/auth?next=%2F%23generator&intent=generate");
           return;
         }
 
-        if (data.code === "LIMIT_REACHED") {
-          throw new Error(data.error || "You have used your free preview. Please unlock an image or buy credits.");
-        }
-
-        throw new Error(data.error || "Could not generate your plushie.");
+        throw new Error(data.error || "Could not start checkout.");
       }
 
-      setResultId(data.resultId);
-      setResultPreview(data.previewDataUrl);
-      setResultRemainingCredits(typeof data.remainingCredits === "number" ? data.remainingCredits : null);
-      setResultUsedFreeGeneration(Boolean(data.usedFreeGeneration));
-
-      if (data.usedFreeGeneration) {
-        setNotice("Your free plushie preview has been used. Next time you will need credits or an unlock.");
-      } else if (typeof data.remainingCredits === "number") {
-        setNotice(`Plushie generated. Remaining credits: ${data.remainingCredits}.`);
-      }
+      window.location.href = data.url;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
-    } finally {
-      setIsGenerating(false);
+      setIsCheckingOut(false);
     }
   }
 
@@ -381,7 +373,7 @@ export function UploadCard() {
           </div>
           <div>
             <p className="text-sm font-semibold text-[var(--text)]">Upload your photo</p>
-            <p className="text-sm text-[var(--muted)]">Sign in to generate your first free preview. Unlock HD only if you love it.</p>
+            <p className="text-sm text-[var(--muted)]">Upload free, choose your style free, and only pay when you're ready to create your plushie.</p>
           </div>
         </div>
 
@@ -416,42 +408,94 @@ export function UploadCard() {
 
         <div className="mt-5">
           <p className="mb-2 text-sm font-semibold text-[var(--text)]">Choose your plushie style</p>
-          <p className="mb-3 text-sm text-[var(--muted)]">Start with one signature look and keep it simple.</p>
+          <p className="mb-3 text-sm text-[var(--muted)]">See your photo, pick your favourite style, then continue to checkout.</p>
           <StylePicker value={style} onChange={setStyle} />
         </div>
+
+        {previewUrl ? (
+          <div className="mt-5 rounded-[24px] border border-[rgba(173,118,63,0.16)] bg-[rgba(255,248,241,0.72)] p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--gold-strong)]">
+                  Ready to create
+                </p>
+                <h3 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-[var(--text)] sm:text-2xl">
+                  Create your plushie for {PAID_GENERATION_PRICE}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                  Your plushie will be generated after checkout. This keeps the app fast for you and protects generation costs until a payment is confirmed.
+                </p>
+              </div>
+              <div className="rounded-full bg-white/85 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--gold-strong)]">
+                Pay first
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3">
+              {[
+                "Free upload and style selection",
+                "Secure checkout before AI generation",
+                "Your plushie is created after payment"
+              ].map((line) => (
+                <div
+                  key={line}
+                  className="rounded-[18px] border border-[rgba(173,118,63,0.14)] bg-white/82 px-4 py-3 text-sm font-medium text-[var(--text)]"
+                >
+                  {line}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {error ? <p className="mt-4 text-center text-sm font-medium text-[#a14321]">{error}</p> : null}
         {notice ? <p className="mt-4 text-center text-sm font-medium text-[var(--gold-strong)]">{notice}</p> : null}
 
         <button
           type="button"
-          onClick={handleGenerate}
-          disabled={isGenerating || isRestoringPending || isPreparingImage}
+          onClick={handleCheckout}
+          disabled={!file || isCheckingOut || isRestoringPending || isPreparingImage}
           className="mt-5 flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-[var(--text)] px-5 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(37,21,5,0.18)] transition hover:opacity-95 disabled:opacity-60"
         >
-          {isGenerating || isRestoringPending || isPreparingImage ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
+          {isCheckingOut || isRestoringPending || isPreparingImage ? <Loader2 className="animate-spin" size={18} /> : <Lock size={18} />}
           {isPreparingImage
             ? "Preparing your photo…"
             : isRestoringPending
               ? "Restoring your photo…"
-              : isGenerating
-                ? "Generating plushie…"
-                : "Create my plushie"}
+              : isCheckingOut
+                ? "Opening secure checkout…"
+                : `Continue to create – ${PAID_GENERATION_PRICE}`}
         </button>
 
         <p className="mt-3 text-center text-sm text-[var(--muted)]">
-          One free preview per account. Pay only if you love it.
+          Upload free. Pay only when you are ready to generate.
         </p>
       </div>
 
-      {isGenerating ? <GenerationStatus /> : null}
-      {resultPreview ? (
-        <ResultCard
-          imageUrl={resultPreview}
-          resultId={resultId}
-          remainingCredits={resultRemainingCredits}
-          usedFreeGeneration={resultUsedFreeGeneration}
-        />
+      {previewUrl ? (
+        <div className="glass-card overflow-hidden rounded-[30px] p-4">
+          <div className="mb-4 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--gold-strong)]">
+                Your uploaded photo
+              </p>
+              <h3 className="mt-1 text-[1.9rem] font-semibold tracking-[-0.04em] text-[var(--text)] sm:text-[2.2rem]">
+                This is ready to plushify
+              </h3>
+            </div>
+            <div className="rounded-full border border-[rgba(173,118,63,0.2)] bg-white/70 px-4 py-2 text-sm font-semibold text-[var(--gold-strong)]">
+              Awaiting payment
+            </div>
+          </div>
+
+          <div className="relative aspect-square overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,#fff8f2,#f6dec0)]">
+            <img src={previewUrl} alt="Uploaded photo preview" className="h-full w-full object-cover" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_15%,rgba(255,255,255,0.08)_46%,rgba(0,0,0,0.10)_100%)]" />
+            <div className="pointer-events-none absolute inset-x-4 bottom-4 rounded-full bg-[rgba(37,21,5,0.74)] px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.22em] text-white backdrop-blur-sm sm:inset-x-8">
+              Pay first · We create your plushie after checkout
+            </div>
+          </div>
+        </div>
       ) : null}
     </section>
   );
