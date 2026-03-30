@@ -46,6 +46,43 @@ async function getGeneratedResultIdFromSessionId(sessionId: string) {
   return data?.id ?? null;
 }
 
+async function getCreditCheckoutState(sessionId: string, userId: string) {
+  const { data: payment, error: paymentError } = await supabaseServer
+    .from("payments")
+    .select("id, credits_added")
+    .eq("stripe_session_id", sessionId)
+    .eq("payment_type", "credits")
+    .maybeSingle();
+
+  if (paymentError) {
+    throw new Error(paymentError.message);
+  }
+
+  if (!payment?.id) {
+    return {
+      ready: false,
+      creditsAdded: null,
+      creditsBalance: null
+    };
+  }
+
+  const { data: profile, error: profileError } = await supabaseServer
+    .from("profiles")
+    .select("credits")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (profileError) {
+    throw new Error(profileError.message);
+  }
+
+  return {
+    ready: true,
+    creditsAdded: typeof payment.credits_added === "number" ? payment.credits_added : null,
+    creditsBalance: typeof profile?.credits === "number" ? profile.credits : null
+  };
+}
+
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
@@ -66,7 +103,9 @@ export async function GET(request: Request) {
         ready: false,
         purchaseType,
         paymentStatus: session.payment_status ?? null,
-        resultId: null
+        resultId: null,
+        creditsAdded: null,
+        creditsBalance: null
       });
     }
 
@@ -78,7 +117,9 @@ export async function GET(request: Request) {
         ready: Boolean(resultId),
         purchaseType,
         paymentStatus: session.payment_status ?? null,
-        resultId
+        resultId,
+        creditsAdded: null,
+        creditsBalance: null
       });
     }
 
@@ -90,7 +131,37 @@ export async function GET(request: Request) {
         ready: Boolean(resultId),
         purchaseType,
         paymentStatus: session.payment_status ?? null,
-        resultId
+        resultId,
+        creditsAdded: null,
+        creditsBalance: null
+      });
+    }
+
+    if (purchaseType === "credits") {
+      const userId = typeof session.metadata?.userId === "string" ? session.metadata.userId : null;
+
+      if (!userId) {
+        return NextResponse.json({
+          ok: true,
+          ready: false,
+          purchaseType,
+          paymentStatus: session.payment_status ?? null,
+          resultId: null,
+          creditsAdded: null,
+          creditsBalance: null
+        });
+      }
+
+      const creditState = await getCreditCheckoutState(session.id, userId);
+
+      return NextResponse.json({
+        ok: true,
+        ready: creditState.ready,
+        purchaseType,
+        paymentStatus: session.payment_status ?? null,
+        resultId: null,
+        creditsAdded: creditState.creditsAdded,
+        creditsBalance: creditState.creditsBalance
       });
     }
 
@@ -99,7 +170,9 @@ export async function GET(request: Request) {
       ready: true,
       purchaseType,
       paymentStatus: session.payment_status ?? null,
-      resultId: null
+      resultId: null,
+      creditsAdded: null,
+      creditsBalance: null
     });
   } catch (error) {
     return NextResponse.json(

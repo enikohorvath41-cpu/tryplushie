@@ -35,23 +35,29 @@ async function getExistingGenerationBySessionId(checkoutSessionId: string) {
   return data?.id ?? null;
 }
 
+async function getExistingPaymentBySessionId(checkoutSessionId: string) {
+  const { data, error } = await supabaseServer
+    .from("payments")
+    .select("id")
+    .eq("stripe_session_id", checkoutSessionId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data?.id ?? null;
+}
+
 async function ensurePaidGenerationPaymentRow(params: {
   userId: string;
   generationId: string;
   checkoutSessionId: string;
   amountGbp: number;
 }) {
-  const { data: existingPayment, error: existingPaymentError } = await supabaseServer
-    .from("payments")
-    .select("id")
-    .eq("stripe_session_id", params.checkoutSessionId)
-    .maybeSingle();
+  const existingPaymentId = await getExistingPaymentBySessionId(params.checkoutSessionId);
 
-  if (existingPaymentError) {
-    throw new Error(existingPaymentError.message);
-  }
-
-  if (existingPayment?.id) {
+  if (existingPaymentId) {
     return;
   }
 
@@ -67,6 +73,57 @@ async function ensurePaidGenerationPaymentRow(params: {
 
   if (paymentInsertError) {
     throw new Error(paymentInsertError.message);
+  }
+}
+
+async function ensureCreditsPaymentApplied(session: Stripe.Checkout.Session) {
+  const userId = typeof session.metadata?.userId === "string" ? session.metadata.userId : null;
+  const creditsToAddRaw = session.metadata?.creditsToAdd;
+  const creditsToAdd = typeof creditsToAddRaw === "string" ? Number.parseInt(creditsToAddRaw, 10) : Number.NaN;
+  const amountGbp = typeof session.amount_total === "number" ? session.amount_total / 100 : 0;
+
+  if (!userId || !Number.isFinite(creditsToAdd) || creditsToAdd <= 0) {
+    throw new Error("Missing credit purchase metadata.");
+  }
+
+  const existingPaymentId = await getExistingPaymentBySessionId(session.id);
+
+  if (existingPaymentId) {
+    return;
+  }
+
+  const { data: profile, error: profileError } = await supabaseServer
+    .from("profiles")
+    .select("credits")
+    .eq("id", userId)
+    .single();
+
+  if (profileError || !profile) {
+    throw new Error(profileError?.message || "Could not load profile for credit purchase.");
+  }
+
+  const nextCredits = toSafeNumber(profile.credits, 0) + creditsToAdd;
+
+  const { error: updateError } = await supabaseServer
+    .from("profiles")
+    .update({ credits: nextCredits })
+    .eq("id", userId);
+
+  if (updateError) {
+    throw new Error(updateError.message);
+  }
+
+  const { error: insertPaymentError } = await supabaseServer.from("payments").insert({
+    user_id: userId,
+    stripe_session_id: session.id,
+    payment_type: "credits",
+    credits_added: creditsToAdd,
+    amount_gbp: amountGbp,
+    status: "paid"
+  });
+
+  if (insertPaymentError) {
+    throw new Error(insertPaymentError.message);
   }
 }
 
@@ -181,35 +238,7 @@ export async function POST(request: Request) {
           typeof session.metadata?.purchaseType === "string" ? session.metadata.purchaseType : "single_unlock";
 
         if (purchaseType === "credits") {
-          const userId = typeof session.metadata?.userId === "string" ? session.metadata.userId : null;
-          const creditsToAddRaw = session.metadata?.creditsToAdd;
-          const creditsToAdd =
-            typeof creditsToAddRaw === "string" ? Number.parseInt(creditsToAddRaw, 10) : Number.NaN;
-
-          if (!userId || !Number.isFinite(creditsToAdd) || creditsToAdd <= 0) {
-            throw new Error("Missing credit purchase metadata.");
-          }
-
-          const { data: profile, error: profileError } = await supabaseServer
-            .from("profiles")
-            .select("credits")
-            .eq("id", userId)
-            .single();
-
-          if (profileError || !profile) {
-            throw new Error(profileError?.message || "Could not load profile for credit purchase.");
-          }
-
-          const nextCredits = toSafeNumber(profile.credits, 0) + creditsToAdd;
-
-          const { error: updateError } = await supabaseServer
-            .from("profiles")
-            .update({ credits: nextCredits })
-            .eq("id", userId);
-
-          if (updateError) {
-            throw new Error(updateError.message);
-          }
+          await ensureCreditsPaymentApplied(session);
         } else if (purchaseType === "paid_generation") {
           await handlePaidGeneration(session);
         } else {

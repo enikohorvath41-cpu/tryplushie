@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CheckCircle2, Loader2, Sparkles } from "lucide-react";
+import { CheckCircle2, CreditCard, Loader2, Sparkles, Wand2 } from "lucide-react";
 
 type CheckoutStatusResponse = {
   ok?: boolean;
@@ -12,15 +12,17 @@ type CheckoutStatusResponse = {
   paymentStatus?: string | null;
   resultId?: string | null;
   ready?: boolean;
+  creditsAdded?: number | null;
+  creditsBalance?: number | null;
 };
 
-const PROGRESS_LINES = [
+const GENERATION_PROGRESS_LINES = [
   "Performing plushie generation",
   "Applying plushie style",
   "Finalising your result"
 ];
 
-const TIPS = [
+const GENERATION_TIPS = [
   "Stay on this page while we finish creating your plushie.",
   "Most plushies finish quickly, but it can take a little longer at busy times.",
   "Once ready, we’ll take you straight to your finished result."
@@ -30,11 +32,14 @@ function CheckoutSuccessInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
+  const redirectRef = useRef(false);
 
   const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(false);
   const [resultId, setResultId] = useState<string | null>(null);
   const [purchaseType, setPurchaseType] = useState<string | null>(null);
+  const [creditsAdded, setCreditsAdded] = useState<number | null>(null);
+  const [creditsBalance, setCreditsBalance] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progressIndex, setProgressIndex] = useState(0);
 
@@ -63,19 +68,31 @@ function CheckoutSuccessInner() {
           throw new Error(data.error || "Could not check your payment status.");
         }
 
-        setPurchaseType(data.purchaseType ?? null);
+        const nextPurchaseType = data.purchaseType ?? null;
+        const nextReady = Boolean(data.ready);
+        const nextResultId = data.resultId ?? null;
 
-        if (data.ready && data.resultId) {
-          setReady(true);
-          setResultId(data.resultId);
-          setLoading(false);
-          router.replace(`/result/${data.resultId}`);
+        setPurchaseType(nextPurchaseType);
+        setCreditsAdded(typeof data.creditsAdded === "number" ? data.creditsAdded : null);
+        setCreditsBalance(typeof data.creditsBalance === "number" ? data.creditsBalance : null);
+        setReady(nextReady);
+        setResultId(nextResultId);
+        setLoading(false);
+        setError(null);
+
+        if (nextPurchaseType === "paid_generation" && nextReady && nextResultId && !redirectRef.current) {
+          redirectRef.current = true;
+          router.replace(`/result/${nextResultId}`);
           return;
         }
 
-        setLoading(false);
-        setReady(false);
-        setResultId(data.resultId ?? null);
+        if (nextPurchaseType === "single_unlock" && nextReady && nextResultId) {
+          return;
+        }
+
+        if (nextPurchaseType === "credits" && nextReady) {
+          return;
+        }
 
         pollTimeout = setTimeout(checkStatus, 2500);
       } catch (err) {
@@ -94,16 +111,55 @@ function CheckoutSuccessInner() {
   }, [router, sessionId]);
 
   useEffect(() => {
-    if (ready) return;
+    if (ready || purchaseType === "credits") return;
 
     const interval = setInterval(() => {
-      setProgressIndex((current) => (current + 1) % PROGRESS_LINES.length);
+      setProgressIndex((current) => (current + 1) % GENERATION_PROGRESS_LINES.length);
     }, 1700);
 
     return () => clearInterval(interval);
-  }, [ready]);
+  }, [purchaseType, ready]);
 
-  const currentProgressLine = useMemo(() => PROGRESS_LINES[progressIndex], [progressIndex]);
+  const currentProgressLine = useMemo(
+    () => GENERATION_PROGRESS_LINES[progressIndex],
+    [progressIndex]
+  );
+
+  const isCreditsFlow = purchaseType === "credits";
+  const isSingleUnlockFlow = purchaseType === "single_unlock";
+  const isGenerationFlow = purchaseType === "paid_generation" || (!purchaseType && !isCreditsFlow && !isSingleUnlockFlow);
+
+  const title = useMemo(() => {
+    if (error) return "We couldn’t confirm your checkout just yet.";
+    if (isCreditsFlow) return ready ? "Credits added to your account." : "Payment received. Adding your credits.";
+    if (ready && isSingleUnlockFlow) return "Your plushie has been unlocked.";
+    if (ready && isGenerationFlow) return "Your plushie is ready.";
+    return "Payment received. We’re generating your plushie.";
+  }, [error, isCreditsFlow, isGenerationFlow, isSingleUnlockFlow, ready]);
+
+  const description = useMemo(() => {
+    if (error) return error;
+    if (isCreditsFlow) {
+      if (ready) {
+        if (typeof creditsBalance === "number") {
+          return `Your credits are now on your account. Current balance: ${creditsBalance}.`;
+        }
+        return "Your credits have been added and are ready to use.";
+      }
+
+      return "Your payment was successful. We’re adding your credits to your account now.";
+    }
+
+    if (ready && isSingleUnlockFlow) {
+      return "Your plushie unlock is complete and ready to view.";
+    }
+
+    if (ready && isGenerationFlow) {
+      return "Your plushie has been created and is ready to open.";
+    }
+
+    return "Your payment was successful. Give us a moment to finish creating your plushie — we’ll take you to it as soon as it’s ready.";
+  }, [creditsBalance, error, isCreditsFlow, isGenerationFlow, isSingleUnlockFlow, ready]);
 
   async function refreshStatus() {
     if (!sessionId) return;
@@ -123,17 +179,20 @@ function CheckoutSuccessInner() {
         throw new Error(data.error || "Could not refresh your payment status.");
       }
 
-      setPurchaseType(data.purchaseType ?? null);
+      const nextPurchaseType = data.purchaseType ?? null;
+      const nextReady = Boolean(data.ready);
+      const nextResultId = data.resultId ?? null;
 
-      if (data.ready && data.resultId) {
-        setReady(true);
-        setResultId(data.resultId);
-        router.replace(`/result/${data.resultId}`);
+      setPurchaseType(nextPurchaseType);
+      setReady(nextReady);
+      setResultId(nextResultId);
+      setCreditsAdded(typeof data.creditsAdded === "number" ? data.creditsAdded : null);
+      setCreditsBalance(typeof data.creditsBalance === "number" ? data.creditsBalance : null);
+
+      if (nextPurchaseType === "paid_generation" && nextReady && nextResultId) {
+        router.replace(`/result/${nextResultId}`);
         return;
       }
-
-      setReady(false);
-      setResultId(data.resultId ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not refresh your payment status.");
     } finally {
@@ -146,26 +205,53 @@ function CheckoutSuccessInner() {
       <div className="mx-auto max-w-4xl">
         <div className="glass-card rounded-[34px] p-6 sm:p-8">
           <div className="mb-4 inline-flex rounded-full bg-[rgba(183,125,63,0.12)] p-3 text-[var(--gold-strong)]">
-            {ready ? <CheckCircle2 size={24} /> : <Loader2 className="animate-spin" size={24} />}
+            {error ? (
+              <CreditCard size={24} />
+            ) : ready ? (
+              <CheckCircle2 size={24} />
+            ) : (
+              <Loader2 className="animate-spin" size={24} />
+            )}
           </div>
 
           <h1 className="text-[2.4rem] font-semibold leading-[1.02] tracking-[-0.045em] text-[var(--text)] sm:text-[3.2rem]">
-            {ready
-              ? purchaseType === "paid_generation"
-                ? "Your plushie is ready."
-                : "Payment complete."
-              : "Payment received. We&apos;re generating your plushie."}
+            {title}
           </h1>
 
           <p className="mt-4 max-w-3xl text-[15px] leading-8 text-[var(--muted)] sm:text-base">
-            {ready
-              ? purchaseType === "paid_generation"
-                ? "Your plushie has been created and is ready to open."
-                : "Your plushie has been unlocked and is ready to view."
-              : "Your payment was successful. Give us a moment to finish creating your plushie — we&apos;ll take you to it as soon as it&apos;s ready."}
+            {description}
           </p>
 
-          {!ready ? (
+          {isCreditsFlow ? (
+            <div className="mt-6 rounded-[28px] border border-[rgba(173,118,63,0.14)] bg-[rgba(255,255,255,0.72)] p-5">
+              <div className="flex items-center gap-3 text-[var(--text)]">
+                <CreditCard className="text-[var(--gold-strong)]" size={18} />
+                <p className="text-sm font-semibold sm:text-base">
+                  {ready ? "Credits are ready to use" : "Adding credits to your account"}
+                </p>
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[22px] border border-[rgba(173,118,63,0.14)] bg-[rgba(255,248,241,0.76)] p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--gold-strong)]">
+                    Credits added
+                  </p>
+                  <p className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[var(--text)]">
+                    {typeof creditsAdded === "number" ? creditsAdded : "—"}
+                  </p>
+                </div>
+
+                <div className="rounded-[22px] border border-[rgba(173,118,63,0.14)] bg-[rgba(255,248,241,0.76)] p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--gold-strong)]">
+                    Current balance
+                  </p>
+                  <p className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[var(--text)]">
+                    {typeof creditsBalance === "number" ? creditsBalance : "—"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : !ready ? (
             <div className="mt-6 rounded-[28px] border border-[rgba(173,118,63,0.14)] bg-[rgba(255,255,255,0.72)] p-5">
               <div className="flex items-center gap-3 text-[var(--text)]">
                 <Loader2 className="animate-spin text-[var(--gold-strong)]" size={18} />
@@ -177,7 +263,7 @@ function CheckoutSuccessInner() {
               </div>
 
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                {TIPS.map((tip) => (
+                {GENERATION_TIPS.map((tip) => (
                   <div
                     key={tip}
                     className="rounded-[22px] border border-[rgba(173,118,63,0.14)] bg-[rgba(255,248,241,0.76)] p-4"
@@ -192,10 +278,15 @@ function CheckoutSuccessInner() {
             </div>
           ) : null}
 
-          {error ? <p className="mt-4 text-sm font-medium text-[#a14321]">{error}</p> : null}
-
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            {ready && resultId ? (
+            {isCreditsFlow ? (
+              <Link
+                href="/account"
+                className="tp-brown-button inline-flex min-h-12 items-center justify-center rounded-full bg-[var(--text)] px-5 text-sm font-semibold transition hover:opacity-95"
+              >
+                View account credits
+              </Link>
+            ) : ready && resultId ? (
               <Link
                 href={`/result/${resultId}`}
                 className="tp-brown-button inline-flex min-h-12 items-center justify-center rounded-full bg-[var(--text)] px-5 text-sm font-semibold transition hover:opacity-95"
@@ -214,10 +305,17 @@ function CheckoutSuccessInner() {
             )}
 
             <Link
-              href="/#generator"
+              href={isCreditsFlow ? "/#generator" : "/#generator"}
               className="inline-flex min-h-12 items-center justify-center rounded-full border border-[rgba(173,118,63,0.2)] bg-white/70 px-5 text-sm font-semibold text-[var(--text)] transition hover:bg-white/85"
             >
-              Make another plushie
+              {isCreditsFlow ? (
+                <span className="inline-flex items-center gap-2">
+                  <Wand2 size={16} />
+                  Use credits in generator
+                </span>
+              ) : (
+                "Make another plushie"
+              )}
             </Link>
           </div>
         </div>
@@ -238,7 +336,7 @@ function CheckoutSuccessFallback() {
             Loading your checkout…
           </h1>
           <p className="mt-4 max-w-3xl text-[15px] leading-8 text-[var(--muted)] sm:text-base">
-            We&apos;re checking your payment and preparing your plushie status now.
+            We’re checking your payment and preparing your plushie status now.
           </p>
         </div>
       </div>

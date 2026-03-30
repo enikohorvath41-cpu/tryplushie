@@ -1,12 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Loader2, Sparkles } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type PackId = "small" | "popular" | "mega";
+
+type ProfileCreditsRow = {
+  credits: number | null;
+};
 
 const CREDIT_PACKS: Array<{
   id: PackId;
@@ -44,6 +48,51 @@ export default function CreditsPage() {
   const router = useRouter();
   const [loadingPack, setLoadingPack] = useState<PackId | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [credits, setCredits] = useState<number | null>(null);
+  const [loadingCredits, setLoadingCredits] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadCredits() {
+      setLoadingCredits(true);
+
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+
+      if (!session?.user?.id) {
+        if (isMounted) {
+          setCredits(null);
+          setLoadingCredits(false);
+        }
+        return;
+      }
+
+      const { data, error: profileError } = await supabase
+        .from("profiles")
+        .select("credits")
+        .eq("id", session.user.id)
+        .maybeSingle();
+
+      if (!isMounted) return;
+
+      if (profileError) {
+        setError(profileError.message);
+        setCredits(null);
+      } else {
+        setCredits((data as ProfileCreditsRow | null)?.credits ?? 0);
+      }
+
+      setLoadingCredits(false);
+    }
+
+    loadCredits();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   async function handleBuyCredits(packId: PackId) {
     setLoadingPack(packId);
@@ -103,16 +152,30 @@ export default function CreditsPage() {
         </div>
 
         <section className="glass-card rounded-[34px] p-5 sm:p-6">
-          <div className="max-w-3xl">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--gold-strong)]">
-              Buy credits
-            </p>
-            <h1 className="mt-2 text-[2rem] font-semibold tracking-[-0.04em] text-[var(--text)] sm:text-[2.5rem]">
-              Keep creating more plushies
-            </h1>
-            <p className="mt-3 text-sm leading-7 text-[var(--muted)] sm:text-base">
-              Credits are best when you want to try more photos, more people, or more plushie styles without buying a single unlock each time.
-            </p>
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--gold-strong)]">
+                Buy credits
+              </p>
+              <h1 className="mt-2 text-[2rem] font-semibold tracking-[-0.04em] text-[var(--text)] sm:text-[2.5rem]">
+                Keep creating more plushies
+              </h1>
+              <p className="mt-3 text-sm leading-7 text-[var(--muted)] sm:text-base">
+                Credits are best when you want to try more photos, more people, or more plushie styles without buying a single unlock each time.
+              </p>
+            </div>
+
+            <div className="rounded-[26px] border border-[rgba(173,118,63,0.16)] bg-[linear-gradient(180deg,rgba(255,251,247,0.95),rgba(250,235,213,0.92))] px-5 py-4 text-left shadow-[0_18px_50px_rgba(173,118,63,0.08)] md:min-w-[220px]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--gold-strong)]">
+                Current credits
+              </p>
+              <p className="mt-2 text-[2.6rem] font-semibold leading-none tracking-[-0.05em] text-[var(--text)]">
+                {loadingCredits ? "…" : credits ?? 0}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                Visible before checkout so you always know your balance.
+              </p>
+            </div>
           </div>
 
           <div className="mt-5 grid gap-4 xl:grid-cols-3">

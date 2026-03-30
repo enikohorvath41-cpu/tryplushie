@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CreditCard, ImageIcon, Loader2, Lock, LogOut, Plus, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CreditCard, ImageIcon, Loader2, LogOut, Plus, Sparkles } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type ProfileRow = {
@@ -102,10 +102,10 @@ export default function AccountPage() {
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signOut();
+      const { error: signOutError } = await supabase.auth.signOut();
 
-      if (error) {
-        throw error;
+      if (signOutError) {
+        throw signOutError;
       }
 
       router.push("/");
@@ -163,6 +163,42 @@ export default function AccountPage() {
             </div>
           </div>
 
+          <div className="mt-5 rounded-[30px] border border-[rgba(173,118,63,0.16)] bg-[linear-gradient(180deg,rgba(255,251,247,0.95),rgba(250,235,213,0.92))] p-5 shadow-[0_18px_50px_rgba(173,118,63,0.08)]">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--gold-strong)]">
+                  Available credits
+                </p>
+                <div className="mt-2 flex items-end gap-3">
+                  <p className="text-[3rem] font-semibold leading-none tracking-[-0.06em] text-[var(--text)] sm:text-[4rem]">
+                    {credits}
+                  </p>
+                  <p className="pb-2 text-sm font-medium text-[var(--muted)]">
+                    ready to use
+                  </p>
+                </div>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
+                  Credits let you create extra plushies after your free preview has been used.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:min-w-[240px]">
+                <Link
+                  href="/credits"
+                  className="inline-flex min-h-12 items-center justify-center rounded-full bg-[var(--text)] px-5 text-sm font-semibold text-white transition hover:opacity-95"
+                >
+                  Buy more credits
+                </Link>
+                <Link
+                  href="/#generator"
+                  className="inline-flex min-h-12 items-center justify-center rounded-full border border-[rgba(173,118,63,0.2)] bg-white/80 px-5 text-sm font-semibold text-[var(--text)] transition hover:bg-white"
+                >
+                  Use credits now
+                </Link>
+              </div>
+            </div>
+          </div>
+
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             <div className="rounded-[28px] border border-[rgba(173,118,63,0.16)] bg-white/72 p-4">
               <div className="mb-3 inline-flex rounded-full bg-[rgba(183,125,63,0.12)] p-3 text-[var(--gold-strong)]">
@@ -171,7 +207,7 @@ export default function AccountPage() {
               <p className="text-sm font-semibold text-[var(--text)]">Credits</p>
               <p className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-[var(--text)]">{credits}</p>
               <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                Use credits for extra plushie generations after your free preview has been used.
+                Visible here any time so you always know how many generations you have left.
               </p>
             </div>
 
@@ -200,21 +236,6 @@ export default function AccountPage() {
                 All your latest generations in one place, ready to reopen whenever you want.
               </p>
             </div>
-          </div>
-
-          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-            <Link
-              href="/credits"
-              className="inline-flex min-h-12 items-center justify-center rounded-full bg-[var(--text)] px-5 text-sm font-semibold text-white transition hover:opacity-95"
-            >
-              Buy credits
-            </Link>
-            <Link
-              href="/#generator"
-              className="inline-flex min-h-12 items-center justify-center rounded-full border border-[rgba(173,118,63,0.2)] bg-white/70 px-5 text-sm font-semibold text-[var(--text)] transition hover:bg-white/85"
-            >
-              Generate another plushie
-            </Link>
           </div>
         </section>
 
@@ -259,71 +280,45 @@ export default function AccountPage() {
                 >
                   <div className="relative aspect-square overflow-hidden bg-[linear-gradient(180deg,#fff8f1,#f5dcc0)]">
                     {item.preview_image_url ? (
-                      <>
-                        <img
-                          src={item.preview_image_url}
-                          alt="Saved plushie preview"
-                          className={`h-full w-full object-cover transition group-hover:scale-[1.02] ${
-                            item.is_unlocked ? "" : "scale-[1.02] blur-[4.5px] brightness-[0.78] saturate-[0.88]"
-                          }`}
-                        />
-
-                        {!item.is_unlocked ? (
-                          <>
-                            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_12%,rgba(255,255,255,0.08)_42%,rgba(0,0,0,0.18)_100%)]" />
-                            <div className="pointer-events-none absolute inset-x-[-16%] top-[28%] rotate-[-15deg] bg-[rgba(255,255,255,0.52)] py-4 shadow-[0_8px_30px_rgba(37,21,5,0.12)] backdrop-blur-md">
-                              <div className="text-center text-[13px] font-semibold uppercase tracking-[0.30em] text-white drop-shadow-[0_2px_8px_rgba(37,21,5,0.35)] sm:text-[15px]">
-                                TRYPLUSHIE · PREVIEW ONLY · TRYPLUSHIE
-                              </div>
-                            </div>
-                          </>
-                        ) : null}
-                      </>
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={item.preview_image_url}
+                        alt={`${item.style ?? "Plushie"} result`}
+                        className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                      />
                     ) : (
-                      <div className="flex h-full items-center justify-center text-[var(--gold-strong)]">
-                        <ImageIcon size={28} />
+                      <div className="flex h-full items-center justify-center text-sm font-semibold text-[var(--gold-strong)]">
+                        Plushie preview
                       </div>
                     )}
 
-                    <div className="absolute left-4 top-4 rounded-full bg-white/88 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--gold-strong)]">
-                      {item.style || "Classic"}
-                    </div>
-
-                    <div
-                      className={`absolute right-4 top-4 rounded-full px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] ${
-                        item.is_unlocked
-                          ? "bg-[rgba(37,21,5,0.84)] text-white"
-                          : "bg-white/88 text-[var(--gold-strong)]"
-                      }`}
-                    >
+                    <div className="absolute left-3 top-3 rounded-full bg-white/86 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--gold-strong)]">
                       {item.is_unlocked ? "Unlocked" : "Preview"}
                     </div>
-
-                    {!item.is_unlocked ? (
-                      <div className="pointer-events-none absolute inset-x-4 bottom-4 rounded-full bg-[rgba(37,21,5,0.74)] px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.22em] text-white backdrop-blur-sm">
-                        <Lock size={12} className="mr-2 inline-block" />
-                        HD locked
-                      </div>
-                    ) : null}
                   </div>
 
                   <div className="p-4">
-                    <p className="text-sm font-semibold text-[var(--text)]">
-                      {item.is_unlocked ? "Unlocked plushie" : "Preview ready"}
-                    </p>
-                    <p className="mt-1 text-sm text-[var(--muted)]">{formatDate(item.created_at)}</p>
-                    <div className="mt-3 inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--text)] px-4 text-sm font-semibold text-white transition group-hover:opacity-95">
-                      Open result
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold capitalize text-[var(--text)]">
+                          {item.style ?? "Classic"} plushie
+                        </p>
+                        <p className="mt-1 text-sm text-[var(--muted)]">{formatDate(item.created_at)}</p>
+                      </div>
+
+                      <span className="rounded-full border border-[rgba(173,118,63,0.16)] bg-[rgba(255,248,241,0.85)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--gold-strong)]">
+                        Open
+                      </span>
                     </div>
                   </div>
                 </Link>
               ))}
             </div>
           ) : (
-            <div className="rounded-[28px] border border-dashed border-[rgba(173,118,63,0.24)] bg-[rgba(255,248,241,0.62)] p-6 text-center">
-              <p className="text-base font-semibold text-[var(--text)]">No plushies yet</p>
+            <div className="rounded-[28px] border border-[rgba(173,118,63,0.14)] bg-[rgba(255,255,255,0.72)] p-6 text-center">
+              <p className="text-lg font-semibold text-[var(--text)]">No plushies yet</p>
               <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                Your generated plushies will appear here once you create your first preview.
+                Your finished plushies will appear here after you create them.
               </p>
               <Link
                 href="/#generator"
