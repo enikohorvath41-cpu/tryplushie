@@ -24,6 +24,8 @@ export function getPlushiePrompt(style: PlushieStyle) {
     "This must be a like-for-like plush translation, not a redesign.",
     "Highest priority: preserve identity.",
     "Second priority: preserve composition.",
+    "First, accurately reconstruct the real subjects exactly as they appear in the original image. Then apply a plush material transformation on top of that reconstruction without changing identity.",
+    "The underlying face structure must remain realistic and human-accurate or animal-accurate beneath the plush texture, not replaced by a simplified toy face.",
     "Keep every person or animal immediately recognisable.",
     "If multiple subjects are present, keep them clearly distinct, separated, and in the same left-to-right order.",
     "Do not merge faces, duplicate subjects, average features, replace identity, or turn different subjects into matching copies.",
@@ -63,7 +65,8 @@ export function getPlushiePrompt(style: PlushieStyle) {
       "Do not simplify different faces into one repeated crochet face.",
       "Do not replace specific identity with a generic amigurumi character look.",
       "Keep facial differences, expression differences, and subject separation clear.",
-      "Keep all subjects fully visible and composition close to the original."
+      "Keep all subjects fully visible and composition close to the original.",
+      "Treat the crochet texture as a material layer over the same real underlying identity."
     ].join(" "),
     luxury: [
       "Style: premium luxury plush collectible.",
