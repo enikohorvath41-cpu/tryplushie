@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { CreditCard, ImageIcon, Loader2, LogOut, Plus, Sparkles } from "lucide-react";
+import { ArrowRight, CreditCard, ImageIcon, Loader2, LogOut, Plus, Sparkles } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type ProfileRow = {
@@ -43,6 +43,10 @@ export default function AccountPage() {
 
   const freePreviewUsed = useMemo(() => (profile?.free_generations_used ?? 0) >= 1, [profile]);
   const credits = profile?.credits ?? 0;
+  const unlockedCount = useMemo(
+    () => generations.filter((item) => Boolean(item.is_unlocked)).length,
+    [generations]
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -124,12 +128,18 @@ export default function AccountPage() {
             ← Back to TryPlushie
           </Link>
 
-          <Link
-            href="/credits"
-            className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--text)] px-4 text-sm font-semibold text-white transition hover:opacity-95"
-          >
-            Buy credits
-          </Link>
+          <div className="flex items-center gap-2">
+            <div className="hidden rounded-full border border-[rgba(173,118,63,0.16)] bg-white/80 px-4 py-2 text-sm font-semibold text-[var(--text)] sm:inline-flex">
+              {credits} credit{credits === 1 ? "" : "s"}
+            </div>
+
+            <Link
+              href="/credits"
+              className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--text)] px-4 text-sm font-semibold text-white transition hover:opacity-95"
+            >
+              Buy credits
+            </Link>
+          </div>
         </div>
 
         <section className="glass-card rounded-[34px] p-5 sm:p-6">
@@ -163,38 +173,65 @@ export default function AccountPage() {
             </div>
           </div>
 
-          <div className="mt-5 rounded-[30px] border border-[rgba(173,118,63,0.16)] bg-[linear-gradient(180deg,rgba(255,251,247,0.95),rgba(250,235,213,0.92))] p-5 shadow-[0_18px_50px_rgba(173,118,63,0.08)]">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--gold-strong)]">
-                  Available credits
-                </p>
-                <div className="mt-2 flex items-end gap-3">
-                  <p className="text-[3rem] font-semibold leading-none tracking-[-0.06em] text-[var(--text)] sm:text-[4rem]">
-                    {credits}
+          <div className="mt-5 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+            <div className="rounded-[30px] border border-[rgba(173,118,63,0.16)] bg-[linear-gradient(180deg,rgba(255,251,247,0.95),rgba(250,235,213,0.92))] p-5 shadow-[0_18px_50px_rgba(173,118,63,0.08)]">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--gold-strong)]">
+                    Available credits
                   </p>
-                  <p className="pb-2 text-sm font-medium text-[var(--muted)]">
-                    ready to use
+                  <div className="mt-2 flex items-end gap-3">
+                    <p className="text-[3rem] font-semibold leading-none tracking-[-0.06em] text-[var(--text)] sm:text-[4rem]">
+                      {credits}
+                    </p>
+                    <p className="pb-2 text-sm font-medium text-[var(--muted)]">
+                      ready to use
+                    </p>
+                  </div>
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
+                    1 image = 1 credit. Use credits directly in the generator whenever you want to create another plushie.
                   </p>
                 </div>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-                  Credits let you create extra plushies after your free preview has been used.
-                </p>
-              </div>
 
-              <div className="flex flex-col gap-3 sm:min-w-[240px]">
-                <Link
-                  href="/credits"
-                  className="inline-flex min-h-12 items-center justify-center rounded-full bg-[var(--text)] px-5 text-sm font-semibold text-white transition hover:opacity-95"
-                >
-                  Buy more credits
-                </Link>
-                <Link
-                  href="/#generator"
-                  className="inline-flex min-h-12 items-center justify-center rounded-full border border-[rgba(173,118,63,0.2)] bg-white/80 px-5 text-sm font-semibold text-[var(--text)] transition hover:bg-white"
-                >
-                  Use credits now
-                </Link>
+                <div className="flex flex-col gap-3 sm:min-w-[240px]">
+                  <Link
+                    href="/credits"
+                    className="inline-flex min-h-12 items-center justify-center rounded-full bg-[var(--text)] px-5 text-sm font-semibold text-white transition hover:opacity-95"
+                  >
+                    Buy more credits
+                  </Link>
+                  <Link
+                    href="/#generator"
+                    className="inline-flex min-h-12 items-center justify-center rounded-full border border-[rgba(173,118,63,0.2)] bg-white/80 px-5 text-sm font-semibold text-[var(--text)] transition hover:bg-white"
+                  >
+                    Use credits now
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[30px] border border-[rgba(173,118,63,0.16)] bg-white/72 p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--gold-strong)]">
+                Quick snapshot
+              </p>
+
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center justify-between rounded-[20px] border border-[rgba(173,118,63,0.14)] bg-[rgba(255,248,241,0.85)] px-4 py-3">
+                  <span className="text-sm font-medium text-[var(--text)]">Free preview</span>
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--gold-strong)]">
+                    {freePreviewUsed ? "Used" : "Available"}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between rounded-[20px] border border-[rgba(173,118,63,0.14)] bg-[rgba(255,248,241,0.85)] px-4 py-3">
+                  <span className="text-sm font-medium text-[var(--text)]">Total plushies</span>
+                  <span className="text-base font-semibold text-[var(--text)]">{generations.length}</span>
+                </div>
+
+                <div className="flex items-center justify-between rounded-[20px] border border-[rgba(173,118,63,0.14)] bg-[rgba(255,248,241,0.85)] px-4 py-3">
+                  <span className="text-sm font-medium text-[var(--text)]">Unlocked</span>
+                  <span className="text-base font-semibold text-[var(--text)]">{unlockedCount}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -295,6 +332,10 @@ export default function AccountPage() {
                     <div className="absolute left-3 top-3 rounded-full bg-white/86 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--gold-strong)]">
                       {item.is_unlocked ? "Unlocked" : "Preview"}
                     </div>
+
+                    <div className="absolute inset-x-3 bottom-3 rounded-full bg-[rgba(37,21,5,0.76)] px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-white opacity-0 transition duration-200 group-hover:opacity-100">
+                      Open result
+                    </div>
                   </div>
 
                   <div className="p-4">
@@ -306,8 +347,9 @@ export default function AccountPage() {
                         <p className="mt-1 text-sm text-[var(--muted)]">{formatDate(item.created_at)}</p>
                       </div>
 
-                      <span className="rounded-full border border-[rgba(173,118,63,0.16)] bg-[rgba(255,248,241,0.85)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--gold-strong)]">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-[rgba(173,118,63,0.16)] bg-[rgba(255,248,241,0.85)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--gold-strong)]">
                         Open
+                        <ArrowRight size={12} />
                       </span>
                     </div>
                   </div>

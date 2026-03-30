@@ -127,7 +127,8 @@ function CheckoutSuccessInner() {
 
   const isCreditsFlow = purchaseType === "credits";
   const isSingleUnlockFlow = purchaseType === "single_unlock";
-  const isGenerationFlow = purchaseType === "paid_generation" || (!purchaseType && !isCreditsFlow && !isSingleUnlockFlow);
+  const isGenerationFlow =
+    purchaseType === "paid_generation" || (!purchaseType && !isCreditsFlow && !isSingleUnlockFlow);
 
   const title = useMemo(() => {
     if (error) return "We couldn’t confirm your checkout just yet.";
@@ -250,6 +251,13 @@ function CheckoutSuccessInner() {
                   </p>
                 </div>
               </div>
+
+              <div className="mt-4 rounded-[22px] border border-[rgba(173,118,63,0.14)] bg-white/80 p-4">
+                <p className="text-sm font-semibold text-[var(--text)]">How to use them</p>
+                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                  Go back to the generator, upload a photo, then choose <span className="font-semibold text-[var(--text)]">Use 1 credit now</span>.
+                </p>
+              </div>
             </div>
           ) : !ready ? (
             <div className="mt-6 rounded-[28px] border border-[rgba(173,118,63,0.14)] bg-[rgba(255,255,255,0.72)] p-5">
@@ -259,7 +267,7 @@ function CheckoutSuccessInner() {
               </div>
 
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-[rgba(173,118,63,0.12)]">
-                <div className="tp-brown-button h-full w-1/2 animate-pulse rounded-full bg-[var(--text)]" />
+                <div className="h-full w-1/2 animate-pulse rounded-full bg-[var(--text)]" />
               </div>
 
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
@@ -305,7 +313,7 @@ function CheckoutSuccessInner() {
             )}
 
             <Link
-              href={isCreditsFlow ? "/#generator" : "/#generator"}
+              href="/#generator"
               className="inline-flex min-h-12 items-center justify-center rounded-full border border-[rgba(173,118,63,0.2)] bg-white/70 px-5 text-sm font-semibold text-[var(--text)] transition hover:bg-white/85"
             >
               {isCreditsFlow ? (

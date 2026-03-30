@@ -60,6 +60,7 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const image = formData.get("image");
     const styleValue = String(formData.get("style") || "classic");
+    const chargeModeValue = String(formData.get("chargeMode") || "");
 
     if (!(image instanceof File)) {
       return NextResponse.json({ ok: false, error: "Please upload an image." }, { status: 400 });
@@ -87,8 +88,22 @@ export async function POST(request: Request) {
 
     const hasFreeGeneration = freeGenerationsUsed < 1;
     const hasCredits = credits > 0;
+    const wantsToUseCredit = chargeModeValue === "credit";
 
-    if (!hasFreeGeneration && !hasCredits) {
+    if (wantsToUseCredit && !hasCredits) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "You do not have any credits left.",
+          code: "NO_CREDITS",
+          freeGenerationsUsed,
+          remainingCredits: credits
+        },
+        { status: 402 }
+      );
+    }
+
+    if (!wantsToUseCredit && !hasFreeGeneration && !hasCredits) {
       return NextResponse.json(
         {
           ok: false,
@@ -159,7 +174,19 @@ export async function POST(request: Request) {
     let nextRemainingCredits = credits;
     let generationChargeType: "free_generation" | "credit" = "free_generation";
 
-    if (hasFreeGeneration) {
+    if (wantsToUseCredit) {
+      nextRemainingCredits = Math.max(0, credits - 1);
+      generationChargeType = "credit";
+
+      const { error: creditError } = await supabaseServer
+        .from("profiles")
+        .update({ credits: nextRemainingCredits })
+        .eq("id", user.id);
+
+      if (creditError) {
+        throw new Error(creditError.message);
+      }
+    } else if (hasFreeGeneration) {
       nextFreeGenerationsUsed = freeGenerationsUsed + 1;
       generationChargeType = "free_generation";
 
@@ -189,7 +216,7 @@ export async function POST(request: Request) {
       ok: true,
       resultId: result.id,
       previewDataUrl: result.previewDataUrl,
-      usedFreeGeneration: hasFreeGeneration,
+      usedFreeGeneration: !wantsToUseCredit && hasFreeGeneration,
       generationChargeType,
       freeGenerationsUsed: nextFreeGenerationsUsed,
       remainingCredits: nextRemainingCredits,

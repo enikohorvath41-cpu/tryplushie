@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Loader2, Sparkles } from "lucide-react";
+import { ArrowRight, Check, CreditCard, Loader2, Sparkles } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type PackId = "small" | "popular" | "mega";
@@ -50,6 +50,10 @@ export default function CreditsPage() {
   const [error, setError] = useState<string | null>(null);
   const [credits, setCredits] = useState<number | null>(null);
   const [loadingCredits, setLoadingCredits] = useState(true);
+
+  const totalGenerationsAvailable = useMemo(() => {
+    return credits ?? 0;
+  }, [credits]);
 
   useEffect(() => {
     let isMounted = true;
@@ -152,7 +156,7 @@ export default function CreditsPage() {
         </div>
 
         <section className="glass-card rounded-[34px] p-5 sm:p-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--gold-strong)]">
                 Buy credits
@@ -165,16 +169,30 @@ export default function CreditsPage() {
               </p>
             </div>
 
-            <div className="rounded-[26px] border border-[rgba(173,118,63,0.16)] bg-[linear-gradient(180deg,rgba(255,251,247,0.95),rgba(250,235,213,0.92))] px-5 py-4 text-left shadow-[0_18px_50px_rgba(173,118,63,0.08)] md:min-w-[220px]">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--gold-strong)]">
-                Current credits
-              </p>
-              <p className="mt-2 text-[2.6rem] font-semibold leading-none tracking-[-0.05em] text-[var(--text)]">
-                {loadingCredits ? "…" : credits ?? 0}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                Visible before checkout so you always know your balance.
-              </p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[360px]">
+              <div className="rounded-[26px] border border-[rgba(173,118,63,0.16)] bg-[linear-gradient(180deg,rgba(255,251,247,0.95),rgba(250,235,213,0.92))] px-5 py-4 text-left shadow-[0_18px_50px_rgba(173,118,63,0.08)]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--gold-strong)]">
+                  Current credits
+                </p>
+                <p className="mt-2 text-[2.6rem] font-semibold leading-none tracking-[-0.05em] text-[var(--text)]">
+                  {loadingCredits ? "…" : credits ?? 0}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                  Visible before checkout so you always know your balance.
+                </p>
+              </div>
+
+              <div className="rounded-[26px] border border-[rgba(173,118,63,0.16)] bg-white/72 px-5 py-4 text-left">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--gold-strong)]">
+                  How credits work
+                </p>
+                <p className="mt-2 text-[1.6rem] font-semibold leading-none tracking-[-0.05em] text-[var(--text)]">
+                  1 image = 1 credit
+                </p>
+                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                  Your current balance covers {loadingCredits ? "…" : totalGenerationsAvailable} more plushie generation{totalGenerationsAvailable === 1 ? "" : "s"}.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -205,7 +223,12 @@ export default function CreditsPage() {
                   <h2 className="mt-2 text-[2.1rem] font-semibold tracking-[-0.04em] text-[var(--text)]">
                     {pack.price}
                   </h2>
-                  <p className="mt-1 text-sm font-medium text-[var(--gold-strong)]">{pack.credits} credits</p>
+                  <div className="mt-2 flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium text-[var(--gold-strong)]">{pack.credits} credits</p>
+                    <span className="rounded-full bg-[rgba(183,125,63,0.12)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--gold-strong)]">
+                      {pack.credits} images
+                    </span>
+                  </div>
                   <p className="mt-3 text-sm leading-6 text-[var(--muted)]">{pack.description}</p>
 
                   <div className="mt-4 space-y-3">
@@ -230,7 +253,7 @@ export default function CreditsPage() {
                     disabled={Boolean(loadingPack)}
                     className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--text)] px-5 text-sm font-semibold text-white transition hover:opacity-95 disabled:opacity-60"
                   >
-                    {isLoading ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
+                    {isLoading ? <Loader2 className="animate-spin" size={18} /> : <CreditCard size={18} />}
                     {isLoading ? "Redirecting…" : `Buy ${pack.credits} credits`}
                   </button>
                 </div>
@@ -242,11 +265,36 @@ export default function CreditsPage() {
             <p className="mt-4 text-center text-sm font-medium text-[#a14321]">{error}</p>
           ) : null}
 
-          <div className="mt-5 rounded-[26px] border border-[rgba(173,118,63,0.16)] bg-[rgba(255,248,241,0.72)] p-4 sm:p-5">
-            <p className="text-sm font-semibold text-[var(--text)]">When to buy credits vs unlock one image</p>
-            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              Buy a single unlock when you only want to keep one finished plushie. Buy credits when you want to generate more plushies across different photos.
-            </p>
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            <div className="rounded-[26px] border border-[rgba(173,118,63,0.16)] bg-[rgba(255,248,241,0.72)] p-4 sm:p-5">
+              <p className="text-sm font-semibold text-[var(--text)]">When to buy credits vs unlock one image</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                Buy a single unlock when you only want to keep one finished plushie. Buy credits when you want to generate more plushies across different photos.
+              </p>
+            </div>
+
+            <div className="rounded-[26px] border border-[rgba(173,118,63,0.16)] bg-white/72 p-4 sm:p-5">
+              <p className="text-sm font-semibold text-[var(--text)]">Best next step</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                If you are trying multiple selfies, pets, or family photos, credits will usually feel better than repeating one-off payments.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Link
+                  href="/#generator"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[var(--text)] px-4 text-sm font-semibold text-white transition hover:opacity-95"
+                >
+                  Use credits in generator
+                  <ArrowRight size={16} />
+                </Link>
+
+                <Link
+                  href="/account"
+                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-[rgba(173,118,63,0.2)] bg-white/80 px-4 text-sm font-semibold text-[var(--text)] transition hover:bg-white"
+                >
+                  View account
+                </Link>
+              </div>
+            </div>
           </div>
         </section>
       </div>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CheckCircle2, Download, Gift, Lock, ShieldCheck, Sparkles } from "lucide-react";
+import { CheckCircle2, CreditCard, Download, Gift, Lock, ShieldCheck, Sparkles } from "lucide-react";
 import { getResult } from "@/lib/store";
 import { UnlockButton } from "@/components/unlock-button";
 
@@ -13,6 +13,7 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
   }
 
   const imageSrc = result.isPaid ? result.hdDataUrl : result.previewDataUrl;
+  const isUnlocked = result.isPaid;
 
   return (
     <main className="min-h-screen px-4 pb-28 pt-5 sm:px-6 sm:pb-12">
@@ -23,7 +24,7 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
           </Link>
 
           <div className="rounded-full bg-white/80 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--gold-strong)] sm:text-xs">
-            {result.isPaid ? "Unlocked" : "Preview ready"}
+            {isUnlocked ? "Unlocked" : "Preview ready"}
           </div>
         </div>
 
@@ -33,10 +34,10 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
               <img
                 src={imageSrc}
                 alt="Generated plushie"
-                className={`aspect-square w-full object-cover ${result.isPaid ? "" : "scale-[1.01]"}`}
+                className={`aspect-square w-full object-cover ${isUnlocked ? "" : "scale-[1.01]"}`}
               />
 
-              {!result.isPaid ? (
+              {!isUnlocked ? (
                 <>
                   <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_18%,rgba(255,255,255,0.12)_46%,rgba(0,0,0,0.12)_100%)]" />
                   <div className="pointer-events-none absolute inset-x-4 top-1/2 -translate-y-1/2 rotate-[-14deg] rounded-full border border-white/45 bg-black/25 px-4 py-3 text-center text-sm font-semibold uppercase tracking-[0.32em] text-white backdrop-blur-sm sm:inset-x-10 sm:px-6 sm:text-base">
@@ -57,20 +58,20 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
           <div className="space-y-5">
             <div className="glass-card rounded-[34px] p-5 sm:p-6">
               <div className="mb-4 inline-flex rounded-full bg-[rgba(183,125,63,0.12)] p-3 text-[var(--gold-strong)]">
-                {result.isPaid ? <CheckCircle2 size={22} /> : <Lock size={22} />}
+                {isUnlocked ? <CheckCircle2 size={22} /> : <Lock size={22} />}
               </div>
 
               <h1 className="text-[2rem] font-semibold tracking-[-0.04em] text-[var(--text)] sm:text-4xl">
-                {result.isPaid ? "Your plushie is ready to keep." : "Your plushie preview is ready."}
+                {isUnlocked ? "Your plushie is ready to keep." : "Your plushie preview is ready."}
               </h1>
 
               <p className="mt-3 text-sm leading-7 text-[var(--muted)] sm:text-base">
-                {result.isPaid
+                {isUnlocked
                   ? "Your full-quality plushie is unlocked and ready to download. Save it, share it, or use it as a cute profile picture."
                   : "You have already done the fun part. Unlock the clean HD version to keep this plushie without the preview lock and watermark."}
               </p>
 
-              {!result.isPaid ? (
+              {!isUnlocked ? (
                 <div className="mt-5 space-y-4">
                   <div className="rounded-[26px] border border-[rgba(173,118,63,0.16)] bg-white/72 p-4 sm:p-5">
                     <div className="flex items-start justify-between gap-4">
@@ -136,9 +137,9 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
 
                     <div className="mt-4 grid gap-3">
                       {[
+                        "1 image = 1 credit",
                         "Great for trying more photos",
-                        "Better for multiple generations",
-                        "Use your free preview first, then scale up"
+                        "Better for multiple generations"
                       ].map((line) => (
                         <div
                           key={line}
@@ -149,16 +150,61 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
                       ))}
                     </div>
 
-                    <Link
-                      href="/#generator"
-                      className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-full border border-[rgba(173,118,63,0.2)] bg-white/80 px-5 text-sm font-semibold text-[var(--text)] transition hover:bg-white"
-                    >
-                      Back to generator
-                    </Link>
+                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                      <Link
+                        href="/credits"
+                        className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--text)] px-5 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(37,21,5,0.18)] transition hover:opacity-95"
+                      >
+                        <CreditCard size={18} />
+                        Buy credits
+                      </Link>
+
+                      <Link
+                        href="/#generator"
+                        className="inline-flex min-h-12 w-full items-center justify-center rounded-full border border-[rgba(173,118,63,0.2)] bg-white/80 px-5 text-sm font-semibold text-[var(--text)] transition hover:bg-white"
+                      >
+                        Back to generator
+                      </Link>
+                    </div>
                   </div>
                 </div>
               ) : (
-                <div className="mt-5">
+                <div className="mt-5 space-y-4">
+                  <div className="rounded-[26px] border border-[rgba(173,118,63,0.16)] bg-[rgba(255,248,241,0.72)] p-4 sm:p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--gold-strong)]">
+                          Unlocked successfully
+                        </p>
+                        <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-[var(--text)]">
+                          Your HD plushie is ready
+                        </h2>
+                        <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                          This result is already unlocked, so you can download it now or head back and create another plushie.
+                        </p>
+                      </div>
+
+                      <div className="rounded-full bg-[rgba(183,125,63,0.12)] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--gold-strong)]">
+                        Ready to save
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid gap-3">
+                      {[
+                        "Full HD image download",
+                        "No watermark or preview lock",
+                        "Works great for sharing or profile pics"
+                      ].map((line) => (
+                        <div
+                          key={line}
+                          className="rounded-[20px] border border-[rgba(173,118,63,0.14)] bg-white/80 px-4 py-3 text-sm font-medium text-[var(--text)]"
+                        >
+                          {line}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   <a
                     href={result.hdDataUrl}
                     download={`tryplushie-${result.id}.png`}
@@ -189,7 +235,7 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
                 {
                   icon: <ShieldCheck size={18} />,
                   title: "Account-based access",
-                  text: "Your previews and unlock flow stay tied to your account."
+                  text: "Your previews, credits, and unlock flow stay tied to your account."
                 },
                 {
                   icon: <Sparkles size={18} />,

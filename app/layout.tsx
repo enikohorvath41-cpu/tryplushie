@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Inter } from "next/font/google";
-import { CreditCard, ImagePlus, UserRound } from "lucide-react";
+import { CreditCard, ImagePlus, Sparkles, UserRound } from "lucide-react";
 import Footer from "@/components/Footer";
 import "./globals.css";
 
@@ -13,7 +13,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "TryPlushie",
-  description: "Turn any photo into a cute plushie in seconds.",
+  description: "Upload a photo, pick a style, then create a cute plushie with 1 credit or a one-off payment.",
   metadataBase: new URL("https://tryplushie.com")
 };
 
@@ -62,15 +62,30 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
 
               <nav className="hidden items-center gap-2 sm:flex">
                 <TopBarLink href="/#generator" icon={<ImagePlus size={16} />} label="Generate" />
-                <TopBarLink href="/credits" icon={<CreditCard size={16} />} label="Credits" />
+                <TopBarLink href="/credits" icon={<CreditCard size={16} />} label="Buy credits" />
                 <TopBarLink href="/account" icon={<UserRound size={16} />} label="Account" />
               </nav>
+            </div>
+
+            <div className="mx-auto hidden w-full max-w-6xl px-4 pb-3 sm:block sm:px-6">
+              <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--gold-strong)]">
+                <span className="rounded-full bg-white/80 px-3 py-2">Free upload</span>
+                <span className="rounded-full bg-white/72 px-3 py-2">Free style selection</span>
+                <span className="rounded-full bg-white/72 px-3 py-2">1 image = 1 credit</span>
+              </div>
             </div>
 
             <div className="mx-auto flex w-full max-w-6xl gap-2 overflow-x-auto px-4 pb-3 sm:hidden sm:px-6">
               <TopBarLink href="/#generator" icon={<ImagePlus size={16} />} label="Generate" />
               <TopBarLink href="/credits" icon={<CreditCard size={16} />} label="Credits" />
               <TopBarLink href="/account" icon={<UserRound size={16} />} label="Account" />
+            </div>
+
+            <div className="mx-auto px-4 pb-3 sm:hidden">
+              <div className="flex items-center gap-2 rounded-full border border-[rgba(173,118,63,0.14)] bg-white/72 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--gold-strong)]">
+                <Sparkles size={14} />
+                <span>Free upload · 1 image = 1 credit</span>
+              </div>
             </div>
           </header>
 
