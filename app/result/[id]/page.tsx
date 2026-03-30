@@ -31,11 +31,13 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
         <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="glass-card overflow-hidden rounded-[34px] p-4 sm:p-5">
             <div className="relative overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,#fff8f1,#f5dcc0)]">
-              <img
-                src={imageSrc}
-                alt="Generated plushie"
-                className={`aspect-square w-full object-cover ${isUnlocked ? "" : "scale-[1.01]"}`}
-              />
+              <div className="flex min-h-[280px] items-center justify-center px-3 py-3 sm:min-h-[420px] sm:px-5 sm:py-5">
+                <img
+                  src={imageSrc}
+                  alt="Generated plushie"
+                  className={`max-h-[720px] w-full object-contain ${isUnlocked ? "" : "scale-[1.01]"}`}
+                />
+              </div>
 
               {!isUnlocked ? (
                 <>
@@ -70,6 +72,10 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
                   ? "Your full-quality plushie is unlocked and ready to download. Save it, share it, or use it as a cute profile picture."
                   : "You have already done the fun part. Unlock the clean HD version to keep this plushie without the preview lock and watermark."}
               </p>
+
+              <div className="mt-4 rounded-[20px] border border-[rgba(173,118,63,0.14)] bg-[rgba(255,248,241,0.78)] px-4 py-3 text-sm leading-6 text-[var(--muted)]">
+                Download to view the full composition and full-quality image.
+              </div>
 
               {!isUnlocked ? (
                 <div className="mt-5 space-y-4">
