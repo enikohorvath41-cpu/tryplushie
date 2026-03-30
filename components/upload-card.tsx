@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
-import { CreditCard, Loader2, Lock, Sparkles, Upload } from "lucide-react";
+import { CheckCircle2, CreditCard, Loader2, Lock, Sparkles, Upload, Wand2 } from "lucide-react";
 import { StylePicker } from "@/components/style-picker";
 import { supabase } from "@/lib/supabase";
 import type { PlushieStyle } from "@/types";
@@ -40,6 +40,18 @@ const PENDING_UPLOADS_BUCKET = "pending-uploads";
 const MAX_IMAGE_DIMENSION = 1280;
 const JPEG_QUALITY = 0.86;
 const PAID_GENERATION_PRICE = "£2.99";
+
+const CREDIT_PROGRESS_LINES = [
+  "Performing plushie generation",
+  "Applying plushie style",
+  "Finalising your result"
+];
+
+const CREDIT_PROGRESS_TIPS = [
+  "Stay on this page while we finish creating your plushie.",
+  "Most plushies finish quickly, but it can take a little longer at busy times.",
+  "Once ready, we’ll take you straight to your finished result."
+];
 
 function makePendingUploadPath(file: File) {
   const extension = file.name.includes(".") ? file.name.split(".").pop() : "jpg";
@@ -178,6 +190,7 @@ export function UploadCard() {
   const [isLoadingCredits, setIsLoadingCredits] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [creditProgressIndex, setCreditProgressIndex] = useState(0);
 
   const helperText = useMemo(() => {
     if (!file) return "Use a clear selfie, pet photo, couple photo or baby photo.";
@@ -185,6 +198,10 @@ export function UploadCard() {
   }, [file]);
 
   const hasCredits = credits > 0;
+  const currentCreditProgressLine = useMemo(
+    () => CREDIT_PROGRESS_LINES[creditProgressIndex],
+    [creditProgressIndex]
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -235,6 +252,16 @@ export function UploadCard() {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (!isGeneratingWithCredit) return;
+
+    const interval = setInterval(() => {
+      setCreditProgressIndex((current) => (current + 1) % CREDIT_PROGRESS_LINES.length);
+    }, 1700);
+
+    return () => clearInterval(interval);
+  }, [isGeneratingWithCredit]);
 
   useEffect(() => {
     let isMounted = true;
@@ -474,6 +501,7 @@ export function UploadCard() {
     }
 
     setIsGeneratingWithCredit(true);
+    setCreditProgressIndex(0);
     setIsCheckingOut(false);
     setError(null);
     setNotice(null);
@@ -523,6 +551,65 @@ export function UploadCard() {
       setError(err instanceof Error ? err.message : "Something went wrong.");
       setIsGeneratingWithCredit(false);
     }
+  }
+
+  if (isGeneratingWithCredit) {
+    return (
+      <div className="space-y-4">
+        <div className="glass-card rounded-[32px] p-5 sm:p-6">
+          <div className="mb-4 inline-flex rounded-full bg-[rgba(183,125,63,0.12)] p-3 text-[var(--gold-strong)]">
+            <Loader2 className="animate-spin" size={22} />
+          </div>
+
+          <h3 className="text-[2rem] font-semibold leading-[1.02] tracking-[-0.04em] text-[var(--text)] sm:text-[2.5rem]">
+            Generating your plushie
+          </h3>
+
+          <p className="mt-3 text-sm leading-7 text-[var(--muted)] sm:text-base">
+            Your credit has been used for this generation. Give us a moment to finish creating your plushie.
+          </p>
+
+          <div className="mt-6 rounded-[28px] border border-[rgba(173,118,63,0.14)] bg-[rgba(255,255,255,0.72)] p-5">
+            <div className="flex items-center gap-3 text-[var(--text)]">
+              <Loader2 className="animate-spin text-[var(--gold-strong)]" size={18} />
+              <p className="text-sm font-semibold sm:text-base">{currentCreditProgressLine}</p>
+            </div>
+
+            <div className="mt-4 h-2 overflow-hidden rounded-full bg-[rgba(173,118,63,0.12)]">
+              <div className="h-full w-1/2 animate-pulse rounded-full bg-[var(--text)]" />
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              {CREDIT_PROGRESS_TIPS.map((tip) => (
+                <div
+                  key={tip}
+                  className="rounded-[22px] border border-[rgba(173,118,63,0.14)] bg-[rgba(255,248,241,0.76)] p-4"
+                >
+                  <div className="mb-3 inline-flex rounded-full bg-[rgba(183,125,63,0.12)] p-2.5 text-[var(--gold-strong)]">
+                    <Sparkles size={16} />
+                  </div>
+                  <p className="text-sm leading-6 text-[var(--text)]">{tip}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-[26px] border border-[rgba(173,118,63,0.14)] bg-[rgba(255,248,241,0.72)] p-4">
+            <div className="flex items-center gap-3">
+              <div className="inline-flex rounded-full bg-[rgba(183,125,63,0.12)] p-2.5 text-[var(--gold-strong)]">
+                <CheckCircle2 size={16} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[var(--text)]">Credit route active</p>
+                <p className="text-sm leading-6 text-[var(--muted)]">
+                  This generation should open as an unlocked result as soon as it is ready.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

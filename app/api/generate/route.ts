@@ -146,6 +146,8 @@ export async function POST(request: Request) {
       generatedDataUrl = createMockPlushieDataUrl(styleLabel);
     }
 
+    const isUnlockedResult = wantsToUseCredit;
+
     const result = await createResult({
       style,
       prompt,
@@ -163,7 +165,7 @@ export async function POST(request: Request) {
       preview_image_url: generatedDataUrl,
       hd_image_url: generatedDataUrl,
       status: "completed",
-      is_unlocked: false
+      is_unlocked: isUnlockedResult
     });
 
     if (generationInsertError) {
@@ -220,7 +222,8 @@ export async function POST(request: Request) {
       generationChargeType,
       freeGenerationsUsed: nextFreeGenerationsUsed,
       remainingCredits: nextRemainingCredits,
-      requiresPayment: nextFreeGenerationsUsed >= 1 && nextRemainingCredits <= 0
+      requiresPayment: nextFreeGenerationsUsed >= 1 && nextRemainingCredits <= 0,
+      isUnlocked: isUnlockedResult
     });
   } catch (error) {
     return NextResponse.json(
