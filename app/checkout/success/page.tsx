@@ -28,6 +28,8 @@ const GENERATION_TIPS = [
   "Once ready, we’ll take you straight to your finished result."
 ];
 
+const CREDITS_REDIRECT_DELAY_MS = 1500;
+
 function CheckoutSuccessInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -53,6 +55,7 @@ function CheckoutSuccessInner() {
     const safeSessionId = sessionId;
     let isMounted = true;
     let pollTimeout: ReturnType<typeof setTimeout> | null = null;
+    let creditsRedirectTimeout: ReturnType<typeof setTimeout> | null = null;
 
     async function checkStatus() {
       try {
@@ -86,11 +89,17 @@ function CheckoutSuccessInner() {
           return;
         }
 
-        if (nextPurchaseType === "single_unlock" && nextReady && nextResultId) {
+        if (nextPurchaseType === "single_unlock" && nextReady && nextResultId && !redirectRef.current) {
+          redirectRef.current = true;
+          router.replace(`/result/${nextResultId}`);
           return;
         }
 
-        if (nextPurchaseType === "credits" && nextReady) {
+        if (nextPurchaseType === "credits" && nextReady && !redirectRef.current) {
+          redirectRef.current = true;
+          creditsRedirectTimeout = setTimeout(() => {
+            router.replace("/#generator");
+          }, CREDITS_REDIRECT_DELAY_MS);
           return;
         }
 
@@ -107,6 +116,7 @@ function CheckoutSuccessInner() {
     return () => {
       isMounted = false;
       if (pollTimeout) clearTimeout(pollTimeout);
+      if (creditsRedirectTimeout) clearTimeout(creditsRedirectTimeout);
     };
   }, [router, sessionId]);
 
@@ -143,9 +153,9 @@ function CheckoutSuccessInner() {
     if (isCreditsFlow) {
       if (ready) {
         if (typeof creditsBalance === "number") {
-          return `Your credits are now on your account. Current balance: ${creditsBalance}.`;
+          return `Your credits are now on your account. Current balance: ${creditsBalance}. Taking you back to the generator now.`;
         }
-        return "Your credits have been added and are ready to use.";
+        return "Your credits have been added and are ready to use. Taking you back to the generator now.";
       }
 
       return "Your payment was successful. We’re adding your credits to your account now.";
@@ -192,6 +202,16 @@ function CheckoutSuccessInner() {
 
       if (nextPurchaseType === "paid_generation" && nextReady && nextResultId) {
         router.replace(`/result/${nextResultId}`);
+        return;
+      }
+
+      if (nextPurchaseType === "single_unlock" && nextReady && nextResultId) {
+        router.replace(`/result/${nextResultId}`);
+        return;
+      }
+
+      if (nextPurchaseType === "credits" && nextReady) {
+        router.replace("/#generator");
         return;
       }
     } catch (err) {

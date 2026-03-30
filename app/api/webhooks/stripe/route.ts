@@ -49,31 +49,62 @@ async function getExistingPaymentBySessionId(checkoutSessionId: string) {
   return data?.id ?? null;
 }
 
+async function insertPaymentRowIfMissing(params: {
+  userId: string;
+  generationId?: string | null;
+  checkoutSessionId: string;
+  paymentType: "paid_generation" | "credits";
+  creditsAdded: number;
+  amountGbp: number;
+}) {
+  const existingPaymentId = await getExistingPaymentBySessionId(params.checkoutSessionId);
+
+  if (existingPaymentId) {
+    return { inserted: false };
+  }
+
+  const paymentRow = {
+    user_id: params.userId,
+    generation_id: params.generationId ?? null,
+    stripe_session_id: params.checkoutSessionId,
+    payment_type: params.paymentType,
+    credits_added: params.creditsAdded,
+    amount_gbp: params.amountGbp,
+    status: "paid"
+  };
+
+  const { error: paymentInsertError } = await supabaseServer.from("payments").insert(paymentRow);
+
+  if (!paymentInsertError) {
+    return { inserted: true };
+  }
+
+  const duplicateSession =
+    paymentInsertError.code === "23505" ||
+    paymentInsertError.message.toLowerCase().includes("duplicate key") ||
+    paymentInsertError.message.toLowerCase().includes("unique");
+
+  if (duplicateSession) {
+    return { inserted: false };
+  }
+
+  throw new Error(paymentInsertError.message);
+}
+
 async function ensurePaidGenerationPaymentRow(params: {
   userId: string;
   generationId: string;
   checkoutSessionId: string;
   amountGbp: number;
 }) {
-  const existingPaymentId = await getExistingPaymentBySessionId(params.checkoutSessionId);
-
-  if (existingPaymentId) {
-    return;
-  }
-
-  const { error: paymentInsertError } = await supabaseServer.from("payments").insert({
-    user_id: params.userId,
-    generation_id: params.generationId,
-    stripe_session_id: params.checkoutSessionId,
-    payment_type: "paid_generation",
-    credits_added: 0,
-    amount_gbp: params.amountGbp,
-    status: "paid"
+  await insertPaymentRowIfMissing({
+    userId: params.userId,
+    generationId: params.generationId,
+    checkoutSessionId: params.checkoutSessionId,
+    paymentType: "paid_generation",
+    creditsAdded: 0,
+    amountGbp: params.amountGbp
   });
-
-  if (paymentInsertError) {
-    throw new Error(paymentInsertError.message);
-  }
 }
 
 async function ensureCreditsPaymentApplied(session: Stripe.Checkout.Session) {
@@ -86,9 +117,16 @@ async function ensureCreditsPaymentApplied(session: Stripe.Checkout.Session) {
     throw new Error("Missing credit purchase metadata.");
   }
 
-  const existingPaymentId = await getExistingPaymentBySessionId(session.id);
+  const paymentInsert = await insertPaymentRowIfMissing({
+    userId,
+    generationId: null,
+    checkoutSessionId: session.id,
+    paymentType: "credits",
+    creditsAdded: creditsToAdd,
+    amountGbp
+  });
 
-  if (existingPaymentId) {
+  if (!paymentInsert.inserted) {
     return;
   }
 
@@ -111,19 +149,6 @@ async function ensureCreditsPaymentApplied(session: Stripe.Checkout.Session) {
 
   if (updateError) {
     throw new Error(updateError.message);
-  }
-
-  const { error: insertPaymentError } = await supabaseServer.from("payments").insert({
-    user_id: userId,
-    stripe_session_id: session.id,
-    payment_type: "credits",
-    credits_added: creditsToAdd,
-    amount_gbp: amountGbp,
-    status: "paid"
-  });
-
-  if (insertPaymentError) {
-    throw new Error(insertPaymentError.message);
   }
 }
 

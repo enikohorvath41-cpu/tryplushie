@@ -1,25 +1,25 @@
 import Link from "next/link";
-import { Check, CreditCard, Heart, ImageIcon, UserRound } from "lucide-react";
+import { Check, CreditCard, Heart, ImageIcon, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { UploadCard } from "@/components/upload-card";
 
 const examples = [
   {
     title: "Family to plushie",
-    note: "A like-for-like plush version that still feels like your real photo.",
+    note: "Recognisable, giftable, and clearly plush — perfect for family keepsakes.",
     tag: "People",
     beforeImage: "/examples/family-before.jpg",
-    afterImage: "/examples/family-after.png",
+    afterImage: "/examples/family-after.jpg",
     beforeLabel: "Before",
-    afterLabel: "After"
+    afterLabel: "Plushie"
   },
   {
     title: "Pet to plushie",
-    note: "Perfect for animal lovers, gifts, and keepsake-style pet portraits.",
+    note: "Keeps the markings and personality while turning the photo into a cuddly plush toy.",
     tag: "Pets",
     beforeImage: "/examples/dog-before.jpg",
-    afterImage: "/examples/dog-after.png",
+    afterImage: "/examples/dog-after.jpg",
     beforeLabel: "Before",
-    afterLabel: "After"
+    afterLabel: "Plushie"
   }
 ];
 
@@ -35,16 +35,24 @@ export default function HomePage() {
             </div>
 
             <div className="mx-auto max-w-3xl text-center">
-              <h1 className="text-balance text-[2.25rem] font-semibold leading-[1.02] tracking-[-0.045em] text-[var(--text)] sm:text-[3.4rem]">
-                Turn your photo into a cute plushie
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--gold-strong)] sm:text-xs">
+                Free upload · Pay or use credits when ready
+              </p>
+
+              <h1 className="mt-3 text-balance text-[2.25rem] font-semibold leading-[1.02] tracking-[-0.045em] text-[var(--text)] sm:text-[3.4rem]">
+                Turn your favourite photos into cute plushies
               </h1>
 
               <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-7 text-[var(--muted)] sm:text-base">
-                Upload a selfie, pet, baby or couple photo, choose your favourite style, then create it with 1 credit or a one-off payment when you are ready.
+                Turn your favourite moments into something you can keep forever. Upload a selfie, pet, baby or couple photo, choose your favourite style, then create it with 1 credit or a one-off payment when you are ready.
               </p>
 
               <p className="mt-4 text-sm font-medium text-[var(--muted)]">
                 Free upload and style selection · No real generation cost before payment
+              </p>
+
+              <p className="mt-2 text-sm font-semibold text-[var(--text)]">
+                Loved across family, pet, and giftable plushie creations
               </p>
             </div>
 
@@ -67,6 +75,11 @@ export default function HomePage() {
 
             <div className="mx-auto mt-6 max-w-3xl">
               <UploadCard />
+            </div>
+
+            <div className="mx-auto mt-4 max-w-3xl rounded-[22px] border border-[rgba(173,118,63,0.14)] bg-[rgba(255,248,241,0.8)] px-4 py-3 text-center">
+              <p className="text-sm font-semibold text-[var(--text)]">Takes around 10–20 seconds · No subscription</p>
+              <p className="mt-1 text-sm text-[var(--muted)]">Fast plushie generation with one-off payments or credits.</p>
             </div>
 
             <div className="mx-auto mt-6 grid max-w-3xl gap-3 sm:grid-cols-3">
@@ -111,7 +124,7 @@ export default function HomePage() {
                 Example results
               </p>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-                Real photo in. Plushie version out. These examples show the kind of faithful, giftable result TryPlushie is built to create.
+                Real photo in. Plushie out. These examples show the kind of recognisable, giftable result TryPlushie is built to create.
               </p>
             </div>
 
@@ -139,27 +152,29 @@ export default function HomePage() {
 
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="rounded-[18px] border border-[rgba(173,118,63,0.14)] bg-white/72 p-3">
-                      <div className="mb-3 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--gold-strong)] w-fit">
+                      <div className="mb-3 w-fit rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--gold-strong)]">
                         {example.beforeLabel}
                       </div>
+
                       <div className="overflow-hidden rounded-[16px] bg-[rgba(255,248,241,0.8)]">
                         <img
                           src={example.beforeImage}
                           alt={`${example.title} before`}
-                          className="h-[220px] w-full object-cover"
+                          className="h-[250px] w-full object-cover sm:h-[270px]"
                         />
                       </div>
                     </div>
 
                     <div className="rounded-[18px] border border-[rgba(173,118,63,0.14)] bg-white/72 p-3">
-                      <div className="mb-3 rounded-full bg-[rgba(37,21,5,0.82)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-white w-fit">
+                      <div className="mb-3 w-fit rounded-full bg-[rgba(37,21,5,0.82)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-white">
                         {example.afterLabel}
                       </div>
+
                       <div className="overflow-hidden rounded-[16px] bg-[rgba(255,248,241,0.8)]">
                         <img
                           src={example.afterImage}
                           alt={`${example.title} after`}
-                          className="h-[220px] w-full object-cover"
+                          className="h-[250px] w-full object-cover sm:h-[270px]"
                         />
                       </div>
                     </div>
@@ -173,10 +188,31 @@ export default function HomePage() {
           </div>
 
           <div className="mt-5 rounded-[28px] border border-[rgba(173,118,63,0.14)] bg-[rgba(255,248,241,0.72)] p-5">
-            <p className="text-sm font-semibold text-[var(--text)]">Best fit for credits</p>
-            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              Credits are best when you want to try multiple selfies, pets, family photos, or styles without repeating one-off payments.
-            </p>
+            <div className="flex items-start gap-3">
+              <div className="inline-flex rounded-full bg-[rgba(183,125,63,0.12)] p-2.5 text-[var(--gold-strong)]">
+                <ShieldCheck size={18} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[var(--text)]">Best fit for credits</p>
+                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                  Credits are best when you want to try multiple selfies, pets, family photos, or styles without repeating one-off payments.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-[28px] border border-[rgba(173,118,63,0.14)] bg-white/72 p-5">
+            <div className="flex items-start gap-3">
+              <div className="inline-flex rounded-full bg-[rgba(183,125,63,0.12)] p-2.5 text-[var(--gold-strong)]">
+                <Sparkles size={18} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[var(--text)]">Made for keepsakes, gifts, and profile pics</p>
+                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                  TryPlushie is designed to turn favourite people and pets into soft, shareable, giftable plushie-style images you’ll actually want to keep.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>

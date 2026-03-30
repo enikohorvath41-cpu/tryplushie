@@ -788,7 +788,7 @@ export function UploadCard() {
                 ? "Restoring your photo…"
                 : isCheckingOut
                   ? "Opening secure checkout…"
-                  : `Continue to create – ${PAID_GENERATION_PRICE}`}
+                  : `Create My Plushie – ${PAID_GENERATION_PRICE}`}
           </button>
         )}
 
