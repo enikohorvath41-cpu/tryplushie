@@ -24,8 +24,6 @@ export function getPlushiePrompt(style: PlushieStyle) {
     "This must be a like-for-like plush translation, not a redesign.",
     "Highest priority: preserve identity.",
     "Second priority: preserve composition.",
-    "First, accurately reconstruct the real subjects exactly as they appear in the original image. Then apply a plush material transformation on top of that reconstruction without changing identity.",
-    "The underlying face structure must remain realistic and human-accurate or animal-accurate beneath the plush texture, not replaced by a simplified toy face.",
     "Keep every person or animal immediately recognisable.",
     "If multiple subjects are present, keep them clearly distinct, separated, and in the same left-to-right order.",
     "Do not merge faces, duplicate subjects, average features, replace identity, or turn different subjects into matching copies.",
@@ -43,42 +41,37 @@ export function getPlushiePrompt(style: PlushieStyle) {
     "Preserve skin tone or fur colour accurately.",
     "Preserve distinctive markings, patches, muzzle colouring, chest colouring, freckles, facial hair, collars, accessories, and recognisable outfit details.",
     "Keep the emotional feel of the original photo so the plush still feels like the same real people or animals.",
-    "Make the result unmistakably a real plush toy.",
-    "Make it clearly plush by changing material, not identity.",
-    "Show clear plush construction: soft stuffed form, fabric seams, plush surface texture, and toy-like material definition.",
-    "Use soft plush fabric, stitched construction, premium toy craftsmanship, and gentle plush softness.",
-    "Do not drift into a soft painted portrait or realistic human rendering with only light texture.",
+    "Make the result clearly and unmistakably a real plush toy.",
+    "Apply plush transformation as a material change while keeping the same identity underneath.",
+    "Show visible plush construction: soft stuffed form, fabric seams, tactile plush surface texture, and clear toy-like material definition.",
+    "Keep realistic plush proportions and do not drift into a soft painted portrait or realistic human rendering with only light texture.",
     "Do not over-exaggerate anatomy or enlarge heads too much.",
     "Do not simplify facial structure into a generic doll template.",
     "Use soft clean lighting and a simple premium background treatment.",
-    "The final image should feel like a bespoke plush made directly from this exact photo, with strong likeness and strong composition preservation."
+    "The final image should feel like a bespoke plush made directly from this exact photo, with strong likeness, strong composition preservation, and obvious plush toy construction."
   ].join(" ");
 
   const styleMap: Record<PlushieStyle, string> = {
     classic: [
       "Style: classic cuddly plush toy.",
-      "Use velvety fabric, soft fleece texture, smooth seams, and a timeless premium soft-toy finish.",
-      "Keep realistic plush proportions and avoid over-stylising the face.",
-      "The plush should feel like the same real people or animals translated into soft plush form.",
-      "Ensure the final result still reads clearly as a stuffed plush toy, with visible plush volume, soft sewn construction, and tactile toy materials."
+      "Use velvety fabric, soft fleece texture, gentle seams, soft stuffing, and a timeless premium soft-toy finish.",
+      "Keep the face recognisable but still obviously plush.",
+      "Aim for a balanced result between realistic identity and unmistakable stuffed plush toy appearance."
     ].join(" "),
     crochet: [
       "Style: handmade crochet plush toy.",
-      "Use amigurumi texture, soft yarn stitches, visible knitted detail, and warm handcrafted finish.",
+      "Use amigurumi texture, soft yarn stitches, visible knitted detail, stuffed crochet volume, and warm handcrafted finish.",
       "Keep strong likeness under the crochet treatment.",
       "Do not simplify different faces into one repeated crochet face.",
       "Do not replace specific identity with a generic amigurumi character look.",
       "Keep facial differences, expression differences, and subject separation clear.",
-      "Keep all subjects fully visible and composition close to the original.",
-      "Treat the crochet texture as a material layer over the same real underlying identity.",
       "Ensure the result still reads clearly as a handmade stuffed crochet plush, not just a soft portrait with yarn texture."
     ].join(" "),
     luxury: [
       "Style: premium luxury plush collectible.",
-      "Use ultra-soft premium materials, elegant stitching, refined finishing, and polished high-end collectible presentation.",
+      "Use ultra-soft premium materials, elegant stitching, refined finishing, subtle seams, stuffed plush volume, and polished high-end collectible presentation.",
       "Keep the result faithful to the original image rather than stylised away from it.",
-      "Preserve individuality with strong likeness and premium realism in the plush treatment.",
-      "Ensure the luxury version still reads clearly as a crafted plush collectible with visible premium plush construction."
+      "Preserve individuality with strong likeness while still looking clearly like a crafted plush collectible."
     ].join(" ")
   };
 
