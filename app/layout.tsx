@@ -84,7 +84,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
             <div className="mx-auto px-4 pb-3 sm:hidden">
               <div className="flex items-center gap-2 rounded-full border border-[rgba(173,118,63,0.14)] bg-white/72 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--gold-strong)]">
                 <Sparkles size={14} />
-                <span>Free upload · 1 image = 1 credit</span>
+                <span>Free upload · Super Cute</span>
               </div>
             </div>
           </header>
